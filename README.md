@@ -7,30 +7,39 @@
 * **One platform** for RHEL + Windows imaging/install flows
 * **Headless-first**: CLI + API now, UI later
 * **Git as source of truth**: blueprints/workflows in Git; facts & run history tracked
-* **Air-gap ready**: import/export signed bundles to offline S3 (Ceph RGW / SeaweedFS)
+* **Air-gap ready**: import/export signed bundles to offline S3 (SeaweedFS everywhere, mirror as needed)
 * **Custom boot UX**: iPXE/GRUB/pxelinux theming + one-time boot tokens
 * **Observability**: OpenTelemetry → Prometheus/Loki/Tempo → Grafana
 
 ## Table of Contents
 
-1. [Architecture](#architecture)
-2. [Microservices](#microservices)
-3. [Tech Stack](#tech-stack)
-4. [Repository Layout](#repository-layout)
-5. [Getting Started (Dev on Docker Desktop K8s)](#getting-started-dev-on-docker-desktop-k8s)
-6. [Configuration & Environment](#configuration--environment)
-7. [Deploying the Stack](#deploying-the-stack)
-8. [PXE Boot: Dev vs Lab](#pxe-boot-dev-vs-lab)
-9. [RHEL & Windows Provisioning Flows](#rhel--windows-provisioning-flows)
-10. [Air-Gap Bundles (`goosectl`)](#air-gap-bundles-goosectl)
-11. [Observability](#observability)
-12. [Security](#security)
-13. [API Overview](#api-overview)
-14. [GitOps (`infra/`) Layout](#gitops-infra-layout)
-15. [Development Workflow](#development-workflow)
-16. [Makefile Targets](#makefile-targets)
-17. [Troubleshooting](#troubleshooting)
-18. [Roadmap](#roadmap)
+1. [How to Use This README](#how-to-use-this-readme)
+2. [Architecture](#architecture)
+3. [Microservices](#microservices)
+4. [Tech Stack](#tech-stack)
+5. [Repository Layout](#repository-layout)
+6. [Getting Started (Dev on Docker Desktop K8s)](#getting-started-dev-on-docker-desktop-k8s)
+7. [Configuration & Environment](#configuration--environment)
+8. [Deploying the Stack](#deploying-the-stack)
+9. [PXE Boot: Dev vs Lab](#pxe-boot-dev-vs-lab)
+10. [RHEL & Windows Provisioning Flows](#rhel--windows-provisioning-flows)
+11. [Air-Gap Bundles (`goosectl`)](#air-gap-bundles-goosectl)
+12. [Observability](#observability)
+13. [Security](#security)
+14. [API Overview](#api-overview)
+15. [GitOps (`infra/`) Layout](#gitops-infra-layout)
+16. [Development Workflow](#development-workflow)
+17. [Makefile Targets](#makefile-targets)
+18. [Troubleshooting](#troubleshooting)
+19. [Roadmap](#roadmap)
+
+## How to Use This README
+
+1. **Start with the TL;DR** above for the high-level pitch, then jump back here when you need specifics.
+2. **Use the Table of Contents** to hop directly to the area you care about—each major activity (dev setup, deployments, PXE flows) has its own section.
+3. **Follow callouts** such as _Prereqs_, numbered walkthroughs, and code fences to complete tasks end-to-end without hunting elsewhere.
+4. **Cross-reference sprint notes** in `SPRINT-PLAN.md` when you need historical context or validation checklists for recently completed work.
+5. **Search-friendly tips**: `git grep`/`rg` the headings if you are in an editor, or view this README in VS Code’s outline for quick navigation.
 
 ## Architecture
 
@@ -62,10 +71,10 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 
 ## Tech Stack
 
-* **Language**: Go 1.22+
-* **DB**: Postgres 16 (JSONB)
+* **Language**: Go 1.25+
+* **DB**: Postgres 17 (JSONB) via `pgxpool` + `gorm` migrations orchestrated by `pressly/goose`
 * **Events**: NATS JetStream
-* **Artifacts**: **SeaweedFS S3** (dev) / **Ceph RGW** (lab)
+* **Artifacts**: **SeaweedFS S3** (dev & prod)
 * **Tracing/Logs/Metrics**: OpenTelemetry → Tempo/Loki/Prometheus → Grafana
 * **Kubernetes**: Docker Desktop Kubernetes (dev) & air-gapped K8s/VMs (lab)
 * **Templates**: Go `text/template` for Kickstart, Unattend, iPXE
@@ -104,7 +113,7 @@ goosed/
 **Prereqs**
 
 * Docker Desktop with Kubernetes enabled
-* Helm 3, kubectl, Go 1.22+
+* Helm 3, kubectl, Go 1.25+
 * (Optional) VS Code Dev Containers
 
 **1) Clone & open**
@@ -117,19 +126,29 @@ cd goosed
 **2) (Optional) Devcontainer**
 
 * Open in VS Code → “Reopen in Container”.
+* The devcontainer uses `./setup-env.sh` automatically to pull Postgres/NATS/Seaweed images and forward ports.
 
-**3) Build base + tidy**
+**3) Bootstrap local dependencies**
+
+```bash
+./setup-env.sh
+```
+
+This pulls the Postgres 17, NATS JetStream, and SeaweedFS S3 containers, writes `.env.development`, and waits until each service is reachable.
+
+**4) Load environment variables**
+
+```bash
+source .env.development
+```
+
+**5) Build base + tidy**
 
 ```bash
 make tidy
 ```
 
-**4) Provide local infra**
-
-* Install Postgres, NATS, and S3 (SeaweedFS S3) in your cluster or point to existing endpoints.
-  *You can also add them as subcharts in the umbrella values for quick dev.*
-
-**5) Deploy**
+**6) Deploy**
 
 ```bash
 helm upgrade --install goose deploy/helm/umbrella \
@@ -139,7 +158,7 @@ helm upgrade --install goose deploy/helm/umbrella \
 kubectl -n goose get pods
 ```
 
-**6) Smoke check**
+**7) Smoke check**
 
 ```bash
 kubectl -n goose port-forward svc/goosed-api 8080:8080 & sleep 1
@@ -148,17 +167,15 @@ curl -f localhost:8080/healthz
 
 ## Configuration & Environment
 
-Common envs (surfaced via Helm values):
+`setup-env.sh` writes `.env.development` with sensible defaults you can source locally:
 
-* **Postgres**: `DB_DSN=postgres://user:pass@postgres.pg:5432/goose?sslmode=disable`
-* **NATS**: `NATS_URL=nats://nats.nats:4222`
-* **S3**:
-
-    * `S3_ENDPOINT=http://s3.s3:8333`
-    * `S3_REGION=lab`
-    * `S3_BUCKET=goose-artifacts`
-    * `S3_ACCESS_KEY=...` / `S3_SECRET_KEY=...`
-    * `S3_TLS=false`
+* **DB_DSN**: `postgres://goosed:goosed@localhost:5432/goosed?sslmode=disable`
+* **NATS_URL**: `nats://localhost:4222`
+* **S3_ENDPOINT**: `http://localhost:8333`
+* **S3_REGION**: `us-east-1`
+* **S3_ACCESS_KEY** / **S3_SECRET_KEY**: `goosed` / `goosedsecret`
+* **S3_DISABLE_TLS**: `true`
+* **S3_BUCKET**: set per-environment (e.g., `goosed-artifacts`)
 * **OTel**: `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.obsv:4318`
 
 Ingress hosts (dev):

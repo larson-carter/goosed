@@ -57,25 +57,36 @@ Deployment env includes OTEL_EXPORTER_OTLP_ENDPOINT, pod has liveness/readiness 
 Return full file contents for the above (create/overwrite).
 ```
 
-# Sprint 1 — Database, Event Bus, S3 (Days 4–7)
+# ~~Sprint 1 — Database, Event Bus, S3 (Days 4–7)~~
 
 **Goals**
 
-* Postgres DSN from env; run migrations.
-* NATS JetStream wrapper (publish/subscribe durable).
-* S3 client for Ceph/SeaweedFS endpoints.
+* ~~Postgres 17 DSN from env; run migrations via `pressly/goose`.~~
+* ~~NATS JetStream wrapper (publish/subscribe durable).~~
+* ~~SeaweedFS S3 client for both dev + prod artifact storage.~~
+* ~~One-touch dev bootstrap (`setup-env.sh` + devcontainer) pulling Postgres/NATS/Seaweed images.~~
 
 **Tasks**
 
-1. Implement `pkg/db/db.go`, migrations in `pkg/db/migrations/0001_init.sql`.
-2. Implement `pkg/bus/bus.go` (NATS URL env: `NATS_URL`).
-3. Implement `pkg/s3/s3.go` using AWS SDK v2 + custom endpoint (`S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_TLS`).
+1. ~~Implement `pkg/db/db.go`, migrations in `pkg/db/migrations/0001_init.sql`.~~
+2. ~~Implement `pkg/bus/bus.go` (NATS URL env: `NATS_URL`).~~
+3. ~~Implement `pkg/s3/s3.go` using AWS SDK v2 + custom endpoint (`S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_DISABLE_TLS`).~~
+4. ~~Author `docker-compose.dev.yml`, `setup-env.sh`, and devcontainer wiring that fetch Postgres 17-alpine, NATS JetStream, and SeaweedFS S3 images for development.~~
 
 **Acceptance**
 
-* API connects to PG, runs migration.
-* Publish/subscribe test subject `goosed.test` flows through NATS.
-* S3 Put/PresignGet works against your endpoint.
+* ~~API connects to PG, runs migration.~~
+* ~~Publish/subscribe test subject `goosed.test` flows through NATS.~~
+* ~~S3 Put/PresignGet works against the bundled SeaweedFS endpoint.~~
+* ~~`./setup-env.sh` pulls images, starts Postgres/NATS/Seaweed, and drops `.env.development`.~~
+
+**Validation Instructions**
+
+1. Run `./setup-env.sh` to pull the Postgres 17, NATS 2.12, and SeaweedFS 4.00 images and start the stack.
+2. `source .env.development` to load the generated connection details.
+3. `GOOSE_DRIVER=pgx GOOSE_DBSTRING="$DB_DSN" go run github.com/pressly/goose/v3/cmd/goose@latest -dir pkg/db/migrations status` to confirm the ORM-backed migrations register cleanly.
+4. `docker compose -f docker-compose.dev.yml exec nats nats --server nats://nats:4222 stream ls` to validate durable JetStream subjects.
+5. `aws --endpoint-url "$S3_ENDPOINT" s3 ls` (with AWS credentials exported from `.env.development`) to confirm artifact storage reachability.
 
 **Codex Prompt:**
 
