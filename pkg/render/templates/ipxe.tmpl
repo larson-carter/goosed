@@ -1,0 +1,11 @@
+#!ipxe
+set api {{.APIBase}}
+set mac {{.MAC}}
+set token {{.Token}}
+
+echo Bootstrapping ${mac} via ${api}
+# Placeholder kernel/initrd references; orchestration layer is expected to
+# exchange the token for concrete boot artifacts.
+kernel ${api}/v1/boot/kernel?token=${token}
+initrd ${api}/v1/boot/initrd?token=${token}
+boot

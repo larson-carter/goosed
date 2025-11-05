@@ -134,6 +134,25 @@ func (c *Client) PresignGet(ctx context.Context, bucket, key string, ttl time.Du
 	return req.URL, nil
 }
 
+// PresignPut generates a presigned PUT URL for uploading an object within the provided TTL.
+func (c *Client) PresignPut(ctx context.Context, bucket, key string, ttl time.Duration) (string, error) {
+	if c == nil {
+		return "", errors.New("nil client")
+	}
+
+	req, err := c.presign.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = ttl
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return req.URL, nil
+}
+
 func encodeSHA256(hexDigest string) (string, error) {
 	if hexDigest == "" {
 		return "", errors.New("sha256 digest required")
