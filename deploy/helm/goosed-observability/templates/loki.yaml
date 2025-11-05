@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-loki
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.loki.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: loki
+      {{- include "goosed-observability.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: loki
+        {{- include "goosed-observability.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: loki
+          image: {{ .Values.loki.image }}
+          args:
+            - "-config.file=/etc/loki/config/loki-config.yaml"
+          ports:
+            - name: http
+              containerPort: 3100
+          volumeMounts:
+            - name: loki-config
+              mountPath: /etc/loki/config
+            - name: loki-data
+              mountPath: /var/loki
+{{- with .Values.loki.resources }}
+          resources:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+      volumes:
+        - name: loki-config
+          configMap:
+            name: {{ include "goosed-observability.fullname" . }}-loki-config
+        - name: loki-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-loki
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/component: loki
+    {{- include "goosed-observability.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: 3100
+      targetPort: http

@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+scrape_configs:
+  - job_name: otel-collector
+    static_configs:
+      - targets:
+          - goosed-observability-otel-collector:9464
+  - job_name: goosed-api
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - goosed-api:8080
+  - job_name: goosed-orchestrator
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - goosed-orchestrator:8080
+  - job_name: goosed-bootd
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - goosed-bootd:8080
+  - job_name: goosed-agents
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - goosed-agents:8080
+  - job_name: goosed-blueprints
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - goosed-blueprints:8080
