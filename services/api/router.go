@@ -58,11 +58,16 @@ func New(store *Store, renderer *render.Engine, cfg Config) (*API, error) {
 		return nil, errors.New("artifact bucket is required")
 	}
 
+	tokenStore, err := newTokenStore(store.ORM, cfg.TokenTTL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &API{
 		store:    store,
 		renderer: renderer,
 		config:   cfg,
-		tokens:   newTokenStore(cfg.TokenTTL),
+		tokens:   tokenStore,
 	}, nil
 }
 
@@ -85,6 +90,7 @@ func (a *API) Routes() (http.Handler, error) {
 		r.Get("/render/unattend", a.handleUnattend)
 		r.Post("/artifacts", a.handleArtifacts)
 		r.Post("/agents/facts", a.handleFacts)
+		r.Post("/agents/token/refresh", a.handleAgentTokenRefresh)
 		r.Post("/runs/start", a.handleRunStart)
 		r.Post("/runs/finish", a.handleRunFinish)
 	})

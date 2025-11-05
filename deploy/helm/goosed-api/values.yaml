@@ -15,7 +15,7 @@ ingress:
   className: ""
   annotations: {}
   host: api.goose.local
-  tls: []
+  tlsSecretName: goosed-api-selfsigned
 
 resources: {}
 

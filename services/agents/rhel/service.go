@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,6 +50,10 @@ func NewService(configPath string) (*Service, error) {
 
 	if strings.TrimSpace(cfg.API) == "" {
 		return nil, fmt.Errorf("config missing api field")
+	}
+
+	if err := ensureHTTPS(cfg.API, allowInsecureHTTP()); err != nil {
+		return nil, err
 	}
 
 	if strings.TrimSpace(cfg.MachineID) == "" {
@@ -233,5 +238,40 @@ func readSELinuxStatus() string {
 		return "permissive"
 	default:
 		return value
+	}
+}
+
+func allowInsecureHTTP() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv("GOOSED_ALLOW_INSECURE_HTTP")))
+	switch value {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func ensureHTTPS(raw string, allowInsecure bool) error {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("parse api url: %w", err)
+	}
+
+	switch parsed.Scheme {
+	case "https":
+		return nil
+	case "http", "":
+		if allowInsecure {
+			return nil
+		}
+		if parsed.Scheme == "" {
+			return fmt.Errorf("api url must include https scheme")
+		}
+		return fmt.Errorf("api url must use https: %s", raw)
+	default:
+		if allowInsecure {
+			return nil
+		}
+		return fmt.Errorf("api url must use https: %s", raw)
 	}
 }
