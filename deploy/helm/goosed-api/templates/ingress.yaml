@@ -24,8 +24,8 @@ spec:
                 name: {{ include "goosed-api.fullname" . }}
                 port:
                   number: {{ .Values.service.port }}
-  {{- with .Values.ingress.tls }}
   tls:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ default (printf "%s-tls" (include "goosed-api.fullname" .)) .Values.ingress.tlsSecretName }}
 {{- end }}

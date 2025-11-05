@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -274,6 +275,9 @@ func Import(ctx context.Context, cfg ImportConfig) (*Manifest, error) {
 	if cfg.APIBaseURL == "" {
 		return nil, errors.New("api base url is required")
 	}
+	if err := ensureHTTPS(cfg.APIBaseURL, allowInsecureHTTP()); err != nil {
+		return nil, err
+	}
 	if cfg.S3 == nil {
 		return nil, errors.New("s3 client is required")
 	}
@@ -531,4 +535,39 @@ func parseS3URL(url string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid s3 url %q", url)
 	}
 	return bucket, key, nil
+}
+
+func allowInsecureHTTP() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv("GOOSED_ALLOW_INSECURE_HTTP")))
+	switch value {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func ensureHTTPS(raw string, allowInsecure bool) error {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("parse api url: %w", err)
+	}
+
+	switch parsed.Scheme {
+	case "https":
+		return nil
+	case "http", "":
+		if allowInsecure {
+			return nil
+		}
+		if parsed.Scheme == "" {
+			return fmt.Errorf("api url must include https scheme")
+		}
+		return fmt.Errorf("api url must use https: %s", raw)
+	default:
+		if allowInsecure {
+			return nil
+		}
+		return fmt.Errorf("api url must use https: %s", raw)
+	}
 }

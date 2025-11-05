@@ -374,3 +374,36 @@ Create similar dashboards for orchestrator, bootd, agents.
 
 Return all YAML/JSON contents.
 ```
+
+# Sprint 9 — Security Hardening (Days 46–50)
+
+**Goals**
+
+* One-time boot tokens (MAC-bound, TTL), TLS, secrets minimalism.
+* Age keys for bundle signing; token rotation for agents.
+
+**Tasks**
+
+1. Add token store to API (in-memory → Postgres with TTL).
+2. Enforce HTTPS everywhere (Ingress TLS; internal service env toggles).
+3. Implement agent token refresh endpoint.
+
+**Acceptance**
+
+* Boot tokens expire upon first use or TTL; re-use fails.
+* All ingress are TLS; agents can rotate token without full reinstall.
+
+**Codex Prompt:**
+
+```
+Harden auth:
+
+1) services/api/api.go: add TokenStore backed by Postgres with schema tokens(id uuid pk, mac text, token text unique, expires_at timestamptz, used bool default false).
+2) routes.go:
+- Issue token in /v1/boot/ipxe path if none active; mark used on first render.
+- POST /v1/agents/token/refresh {machine_id, old_token} -> returns new token with rotated expiry; invalidate old_token.
+
+3) Update Helm ingress templates for TLS termination with a self-signed secret placeholder.
+
+Provide full diff for updated files and token SQL migration 0002_tokens.sql.
+```

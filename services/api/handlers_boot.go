@@ -27,7 +27,23 @@ func (a *API) handleIPXE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := a.tokens.issue(machine.MAC)
+	token, ok, err := a.tokens.Active(r.Context(), machine.MAC)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if !ok {
+		token, err = a.tokens.Issue(r.Context(), machine.MAC)
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	if err := a.tokens.MarkUsed(r.Context(), token.Value); err != nil {
+		respondError(w, http.StatusInternalServerError, err)
+		return
+	}
 
 	apiBase := a.config.APIBase
 	if apiBase == "" {
@@ -39,7 +55,7 @@ func (a *API) handleIPXE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := map[string]any{
-		"Token":   token,
+		"Token":   token.Value,
 		"MAC":     machine.MAC,
 		"APIBase": apiBase,
 	}
@@ -71,9 +87,26 @@ func (a *API) handleKickstart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	issuedToken, err := a.tokens.Issue(r.Context(), machine.MAC)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	apiBase := a.config.APIBase
+	if apiBase == "" {
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		apiBase = fmt.Sprintf("%s://%s", scheme, r.Host)
+	}
+
 	rendered, err := a.renderer.Render("kickstart.tmpl", map[string]any{
 		"Machine": machine,
 		"Profile": machine.Profile,
+		"Token":   issuedToken.Value,
+		"APIBase": apiBase,
 	})
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err)
@@ -101,7 +134,11 @@ func (a *API) handleUnattend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := a.tokens.issue(machine.MAC)
+	issuedToken, err := a.tokens.Issue(r.Context(), machine.MAC)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err)
+		return
+	}
 
 	apiBase := a.config.APIBase
 	if apiBase == "" {
@@ -115,7 +152,7 @@ func (a *API) handleUnattend(w http.ResponseWriter, r *http.Request) {
 	rendered, err := a.renderer.Render("unattend.xml.tmpl", map[string]any{
 		"Machine": machine,
 		"Profile": machine.Profile,
-		"Token":   token,
+		"Token":   issuedToken.Value,
 		"APIBase": apiBase,
 	})
 	if err != nil {
