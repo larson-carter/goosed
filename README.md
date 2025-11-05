@@ -144,7 +144,13 @@ Before you try to run goose’d locally make sure you have the following pieces 
    make tidy
    ```
 
-4. **Install backing services into Kubernetes** (run once per cluster). The commands below create the `goose` namespace and install Postgres, NATS JetStream, and SeaweedFS with credentials that match `values-dev.yaml`.
+4. **Build Containers**
+
+   ```bash
+   make build
+   ```
+
+5. **Install backing services into Kubernetes** (run once per cluster). The commands below create the `goose` namespace and install Postgres, NATS JetStream, and SeaweedFS with credentials that match `values-dev.yaml`.
 
    ```bash
    kubectl create namespace goose --dry-run=client -o yaml | kubectl apply -f -
@@ -176,7 +182,7 @@ Before you try to run goose’d locally make sure you have the following pieces 
      --set s3.port=8333
    ```
 
-5. **Build chart dependencies and deploy goose’d**
+6. **Build chart dependencies and deploy goose’d**
 
    ```bash
    helm dependency build deploy/helm/umbrella
@@ -185,13 +191,13 @@ Before you try to run goose’d locally make sure you have the following pieces 
      -f deploy/helm/umbrella/values-dev.yaml
    ```
 
-6. **Verify pods** – everything should settle into `Running`/`Completed` within a couple of minutes.
+7. **Verify pods** – everything should settle into `Running`/`Completed` within a couple of minutes.
 
    ```bash
    kubectl -n goose get pods
    ```
 
-7. **Run the smoke test** – this port-forwards each service and fails fast if any `/healthz` endpoint returns a non-200.
+8. **Run the smoke test** – this port-forwards each service and fails fast if any `/healthz` endpoint returns a non-200.
 
    ```bash
    ./build/scripts/smoke.sh

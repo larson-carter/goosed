@@ -25,7 +25,7 @@ test:
 build:
 	@for svc in $(SERVICES); do \
 		echo "==> services/$$svc"; \
-		docker build -f services/$$svc/Dockerfile -t goosed/$$svc:dev services/$$svc; \
+		docker build -f services/$$svc/Dockerfile -t goosed/$$svc:dev .; \
 	done
 
 run-api:
