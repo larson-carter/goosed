@@ -20,6 +20,7 @@ func (a *API) handleArtifacts(w http.ResponseWriter, r *http.Request) {
 		Kind   string         `json:"kind"`
 		SHA256 string         `json:"sha256"`
 		Meta   map[string]any `json:"meta"`
+		Mode   string         `json:"mode"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		respondError(w, http.StatusBadRequest, err)
@@ -28,6 +29,17 @@ func (a *API) handleArtifacts(w http.ResponseWriter, r *http.Request) {
 
 	req.Kind = strings.TrimSpace(req.Kind)
 	req.SHA256 = strings.TrimSpace(req.SHA256)
+	req.Mode = strings.TrimSpace(strings.ToLower(req.Mode))
+	if req.Mode == "" {
+		req.Mode = "presign"
+	}
+	switch req.Mode {
+	case "presign", "register":
+	default:
+		respondError(w, http.StatusBadRequest, errors.New("mode must be presign or register"))
+		return
+	}
+
 	if req.Kind == "" || req.SHA256 == "" {
 		respondError(w, http.StatusBadRequest, errors.New("kind and sha256 are required"))
 		return
@@ -61,14 +73,23 @@ func (a *API) handleArtifacts(w http.ResponseWriter, r *http.Request) {
 
 	artifact := model.toAPI()
 
-	uploadURL, err := a.store.S3.PresignPut(ctx, a.config.ArtifactBucket, key, presignURLExpiry)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, fmt.Errorf("presign put: %w", err))
-		return
+	response := map[string]any{
+		"artifact": artifact,
 	}
 
-	respondJSON(w, http.StatusCreated, map[string]any{
-		"artifact":   artifact,
-		"upload_url": uploadURL,
-	})
+	if req.Mode == "presign" {
+		uploadURL, err := a.store.S3.PresignPut(ctx, a.config.ArtifactBucket, key, presignURLExpiry)
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, fmt.Errorf("presign put: %w", err))
+			return
+		}
+		response["upload_url"] = uploadURL
+	} else {
+		response["s3"] = map[string]string{
+			"bucket": a.config.ArtifactBucket,
+			"key":    key,
+		}
+	}
+
+	respondJSON(w, http.StatusCreated, response)
 }
