@@ -1,0 +1,6 @@
+apiVersion: v2
+name: goosed-inventory
+description: Helm chart for the goose'd inventory service
+version: 0.1.0
+appVersion: "0.1.0"
+type: application

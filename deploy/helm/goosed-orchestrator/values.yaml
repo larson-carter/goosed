@@ -1,0 +1,21 @@
+image:
+  repository: goosed/orchestrator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+otel:
+  exporterEndpoint: http://otel-collector:4318
+
+env: {}
+
+resources: {}
+
+affinity: {}
+
+tolerations: []
+
+nodeSelector: {}
