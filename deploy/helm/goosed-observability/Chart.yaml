@@ -1,0 +1,6 @@
+apiVersion: v2
+name: goosed-observability
+description: Deploys the goosed observability stack (OTel Collector, Prometheus, Loki, Tempo, Grafana)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

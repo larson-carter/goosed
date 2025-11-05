@@ -1,0 +1,29 @@
+nameOverride: ""
+fullnameOverride: ""
+
+otelCollector:
+  image: otel/opentelemetry-collector-contrib:0.89.0
+  replicaCount: 1
+  resources: {}
+
+prometheus:
+  image: prom/prometheus:v2.48.0
+  replicaCount: 1
+  resources: {}
+
+loki:
+  image: grafana/loki:2.9.0
+  replicaCount: 1
+  resources: {}
+
+tempo:
+  image: grafana/tempo:2.3.1
+  replicaCount: 1
+  resources: {}
+
+grafana:
+  image: grafana/grafana:10.1.4
+  replicaCount: 1
+  adminUser: admin
+  adminPassword: admin
+  resources: {}

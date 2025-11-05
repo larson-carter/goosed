@@ -1,0 +1,33 @@
+server:
+  http_listen_port: 3200
+  log_level: info
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+        http:
+ingester:
+  max_block_bytes: 104857600
+  max_block_duration: 5m
+  trace_idle_period: 10s
+compactor:
+  compaction:
+    compaction_window: 24h
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/traces
+metrics_generator:
+  enabled: true
+  registry:
+    external_labels:
+      cluster: goosed
+      source: tempo
+overrides:
+  metrics_generator_processors:
+    - service-graphs
+    - span-metrics

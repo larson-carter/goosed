@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-otel-config
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  collector.yaml: |-
+{{ (.Files.Get "../../../ops/otel/collector.yaml") | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-prometheus-config
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |-
+{{ (.Files.Get "../../../ops/prometheus/scrape-config.yaml") | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-loki-config
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  loki-config.yaml: |-
+{{ (.Files.Get "../../../ops/loki/config.yaml") | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-tempo-config
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  tempo.yaml: |-
+{{ (.Files.Get "../../../ops/tempo/config.yaml") | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-grafana-datasources
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  datasources.yaml: |-
+{{ (.Files.Get "../../../ops/grafana/datasources.yaml") | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-grafana-dashboards
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+{{- $dashboards := .Files.Glob "../../../ops/grafana/dashboards/*.json" }}
+{{- range $path, $file := $dashboards }}
+  {{ base $path }}: |-
+{{ $file | nindent 4 }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "goosed-observability.fullname" . }}-grafana-dashboard-provider
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  dashboards.yaml: |-
+    apiVersion: 1
+    providers:
+      - name: goosed
+        orgId: 1
+        type: file
+        disableDeletion: false
+        editable: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards

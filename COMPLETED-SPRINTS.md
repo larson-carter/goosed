@@ -336,3 +336,41 @@ D) Import path: read bundle, verify signature, upload objects to S3 using s3.Put
 
 Return all code files complete.
 ```
+
+# Sprint 8 — Observability & Dashboards (Days 41–45)
+
+**Goals**
+
+* OTel Collector config + Prom/Loki/Tempo charts in `goosed-observability`.
+* Grafana dashboards for API latency, workflow durations, agent health.
+
+**Tasks**
+
+1. Fill `ops/otel/collector.yaml`, Prom scrape configs, Loki & Tempo configs.
+2. Create dashboards JSONs in `ops/grafana/dashboards/`.
+3. Helm chart `goosed-observability` to deploy stack with datasources from `ops/grafana/datasources.yaml`.
+
+**Acceptance**
+
+* Grafana shows: API p50/p95/p99, error rates; Orchestrator step histograms; Agent last-seen panel; S3 throughput.
+
+**Codex Prompt:**
+
+```
+Produce observability assets:
+
+1) ops/otel/collector.yaml: receivers (otlp http:4318), processors (batch), exporters:
+- prometheus (0.0.0.0:9464) OR prometheusremotewrite disabled, 
+- tempo (otlp to tempo),
+- logging (info)
+Include service pipelines for traces, metrics, logs.
+
+2) deploy/helm/goosed-observability:
+- Chart that deploys otel-collector (Deployment + Service), Prometheus, Loki, Tempo, Grafana with datasources from ops/grafana/datasources.yaml.
+- Grafana loads dashboards from configmap mounted at /var/lib/grafana/dashboards.
+
+3) ops/grafana/dashboards/api.json: panels for http_server_duration_seconds histogram (p95), request count, error rate; label by service="goosed-api".
+Create similar dashboards for orchestrator, bootd, agents.
+
+Return all YAML/JSON contents.
+```

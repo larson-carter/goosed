@@ -1,0 +1,36 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://goosed-observability-prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://goosed-observability-loki:3100
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://goosed-observability-tempo:3200
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki
+        mappedTags:
+          - key: service
+      tracesToMetrics:
+        datasourceUid: prometheus
+        queries:
+          - name: Latency
+            query: sum(rate(http_server_duration_seconds_count{service="$__service"}[5m]))
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
