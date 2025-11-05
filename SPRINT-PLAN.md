@@ -61,21 +61,24 @@ Return full file contents for the above (create/overwrite).
 
 **Goals**
 
-* Postgres DSN from env; run migrations.
+* Postgres 17 DSN from env; run migrations via `pressly/goose`.
 * NATS JetStream wrapper (publish/subscribe durable).
-* S3 client for Ceph/SeaweedFS endpoints.
+* SeaweedFS S3 client for both dev + prod artifact storage.
+* One-touch dev bootstrap (`setup-env.sh` + devcontainer) pulling Postgres/NATS/Seaweed images.
 
 **Tasks**
 
 1. Implement `pkg/db/db.go`, migrations in `pkg/db/migrations/0001_init.sql`.
 2. Implement `pkg/bus/bus.go` (NATS URL env: `NATS_URL`).
-3. Implement `pkg/s3/s3.go` using AWS SDK v2 + custom endpoint (`S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_TLS`).
+3. Implement `pkg/s3/s3.go` using AWS SDK v2 + custom endpoint (`S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_DISABLE_TLS`).
+4. Author `docker-compose.dev.yml`, `setup-env.sh`, and devcontainer wiring that fetch Postgres 17-alpine, NATS JetStream, and SeaweedFS S3 images for development.
 
 **Acceptance**
 
 * API connects to PG, runs migration.
 * Publish/subscribe test subject `goosed.test` flows through NATS.
-* S3 Put/PresignGet works against your endpoint.
+* S3 Put/PresignGet works against the bundled SeaweedFS endpoint.
+* `./setup-env.sh` pulls images, starts Postgres/NATS/Seaweed, and drops `.env.development`.
 
 **Codex Prompt:**
 

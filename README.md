@@ -7,7 +7,7 @@
 * **One platform** for RHEL + Windows imaging/install flows
 * **Headless-first**: CLI + API now, UI later
 * **Git as source of truth**: blueprints/workflows in Git; facts & run history tracked
-* **Air-gap ready**: import/export signed bundles to offline S3 (Ceph RGW / SeaweedFS)
+* **Air-gap ready**: import/export signed bundles to offline S3 (SeaweedFS everywhere, mirror as needed)
 * **Custom boot UX**: iPXE/GRUB/pxelinux theming + one-time boot tokens
 * **Observability**: OpenTelemetry → Prometheus/Loki/Tempo → Grafana
 
@@ -63,9 +63,9 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 ## Tech Stack
 
 * **Language**: Go 1.22+
-* **DB**: Postgres 16 (JSONB)
+* **DB**: Postgres 17 (JSONB) via `pgxpool` + `pressly/goose`
 * **Events**: NATS JetStream
-* **Artifacts**: **SeaweedFS S3** (dev) / **Ceph RGW** (lab)
+* **Artifacts**: **SeaweedFS S3** (dev & prod)
 * **Tracing/Logs/Metrics**: OpenTelemetry → Tempo/Loki/Prometheus → Grafana
 * **Kubernetes**: Docker Desktop Kubernetes (dev) & air-gapped K8s/VMs (lab)
 * **Templates**: Go `text/template` for Kickstart, Unattend, iPXE
@@ -117,19 +117,29 @@ cd goosed
 **2) (Optional) Devcontainer**
 
 * Open in VS Code → “Reopen in Container”.
+* The devcontainer uses `./setup-env.sh` automatically to pull Postgres/NATS/Seaweed images and forward ports.
 
-**3) Build base + tidy**
+**3) Bootstrap local dependencies**
+
+```bash
+./setup-env.sh
+```
+
+This pulls the Postgres 17, NATS JetStream, and SeaweedFS S3 containers, writes `.env.development`, and waits until each service is reachable.
+
+**4) Load environment variables**
+
+```bash
+source .env.development
+```
+
+**5) Build base + tidy**
 
 ```bash
 make tidy
 ```
 
-**4) Provide local infra**
-
-* Install Postgres, NATS, and S3 (SeaweedFS S3) in your cluster or point to existing endpoints.
-  *You can also add them as subcharts in the umbrella values for quick dev.*
-
-**5) Deploy**
+**6) Deploy**
 
 ```bash
 helm upgrade --install goose deploy/helm/umbrella \
@@ -139,7 +149,7 @@ helm upgrade --install goose deploy/helm/umbrella \
 kubectl -n goose get pods
 ```
 
-**6) Smoke check**
+**7) Smoke check**
 
 ```bash
 kubectl -n goose port-forward svc/goosed-api 8080:8080 & sleep 1
@@ -148,17 +158,15 @@ curl -f localhost:8080/healthz
 
 ## Configuration & Environment
 
-Common envs (surfaced via Helm values):
+`setup-env.sh` writes `.env.development` with sensible defaults you can source locally:
 
-* **Postgres**: `DB_DSN=postgres://user:pass@postgres.pg:5432/goose?sslmode=disable`
-* **NATS**: `NATS_URL=nats://nats.nats:4222`
-* **S3**:
-
-    * `S3_ENDPOINT=http://s3.s3:8333`
-    * `S3_REGION=lab`
-    * `S3_BUCKET=goose-artifacts`
-    * `S3_ACCESS_KEY=...` / `S3_SECRET_KEY=...`
-    * `S3_TLS=false`
+* **DB_DSN**: `postgres://goosed:goosed@localhost:5432/goosed?sslmode=disable`
+* **NATS_URL**: `nats://localhost:4222`
+* **S3_ENDPOINT**: `http://localhost:8333`
+* **S3_REGION**: `us-east-1`
+* **S3_ACCESS_KEY** / **S3_SECRET_KEY**: `goosed` / `goosedsecret`
+* **S3_DISABLE_TLS**: `true`
+* **S3_BUCKET**: set per-environment (e.g., `goosed-artifacts`)
 * **OTel**: `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.obsv:4318`
 
 Ingress hosts (dev):
