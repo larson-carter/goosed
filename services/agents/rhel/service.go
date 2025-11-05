@@ -170,8 +170,10 @@ func (s *Service) sendFacts(ctx context.Context, snapshot map[string]any) error 
 		return fmt.Errorf("post facts unexpected status %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
 	}
 
-	io.Copy(io.Discard, resp.Body)
-	return nil
+        if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+                return fmt.Errorf("drain response body: %w", err)
+        }
+        return nil
 }
 
 func (s *Service) postinstallMarkerExists() bool {
