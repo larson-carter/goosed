@@ -1,0 +1,277 @@
+openapi: 3.1.0
+info:
+  title: goosed API
+  version: 0.1.0
+servers:
+  - url: https://api.goose.local
+paths:
+  /v1/machines:
+    post:
+      summary: Upsert a machine record by MAC address
+      operationId: upsertMachine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mac]
+              properties:
+                mac:
+                  type: string
+                  example: "52:54:00:12:34:56"
+                serial:
+                  type: string
+                profile:
+                  type: object
+      responses:
+        '200':
+          description: Machine upserted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  machine:
+                    $ref: '#/components/schemas/Machine'
+  /v1/boot/ipxe:
+    get:
+      summary: Render an iPXE script for a machine
+      operationId: renderIPXE
+      parameters:
+        - in: query
+          name: mac
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: iPXE script
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/render/kickstart:
+    get:
+      summary: Render a Kickstart template for a machine
+      operationId: renderKickstart
+      parameters:
+        - in: query
+          name: machine_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Kickstart template
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/render/unattend:
+    get:
+      summary: Render a Windows unattended XML template for a machine
+      operationId: renderUnattend
+      parameters:
+        - in: query
+          name: machine_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Unattend XML template
+          content:
+            application/xml:
+              schema:
+                type: string
+  /v1/artifacts:
+    post:
+      summary: Create an artifact placeholder and obtain an upload URL
+      operationId: createArtifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, sha256]
+              properties:
+                kind:
+                  type: string
+                sha256:
+                  type: string
+                meta:
+                  type: object
+      responses:
+        '201':
+          description: Artifact created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifact:
+                    $ref: '#/components/schemas/Artifact'
+                  upload_url:
+                    type: string
+                    format: uri
+  /v1/agents/facts:
+    post:
+      summary: Record a snapshot of machine facts
+      operationId: postFacts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [machine_id, snapshot]
+              properties:
+                machine_id:
+                  type: string
+                  format: uuid
+                snapshot:
+                  type: object
+      responses:
+        '201':
+          description: Fact recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fact:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      machine_id:
+                        type: string
+                        format: uuid
+                      snapshot:
+                        type: object
+                      created_at:
+                        type: string
+                        format: date-time
+  /v1/runs/start:
+    post:
+      summary: Create a new provisioning run
+      operationId: startRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [machine_id, blueprint_id]
+              properties:
+                machine_id:
+                  type: string
+                  format: uuid
+                blueprint_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Run started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run:
+                    $ref: '#/components/schemas/Run'
+  /v1/runs/finish:
+    post:
+      summary: Mark a provisioning run as finished
+      operationId: finishRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [run_id, status]
+              properties:
+                run_id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                logs:
+                  type: string
+      responses:
+        '200':
+          description: Run updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run:
+                    $ref: '#/components/schemas/Run'
+components:
+  schemas:
+    Machine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mac:
+          type: string
+        serial:
+          type: string
+        profile:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Run:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        machine_id:
+          type: string
+          format: uuid
+        blueprint_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+        logs:
+          type: string
+    Artifact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        sha256:
+          type: string
+        url:
+          type: string
+        meta:
+          type: object
+        created_at:
+          type: string
+          format: date-time
