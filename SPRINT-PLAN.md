@@ -1,87 +1,3 @@
-# ~~Sprint 2 — API Contracts & Render Endpoints (Days 8–12)~~
-
-**Goals**
-
-* ~~Headless API for machines, runs, artifacts, and renderers.~~
-* ~~OpenAPI stub.~~
-
-**Tasks**
-
-1. ~~Create `services/api/api.go` types & DB wires.~~
-2. ~~Implement `services/api/routes.go` using `chi`.~~
-3. ~~Add templates in `pkg/render/templates/`.~~
-4. ~~Wire S3 presign for artifact uploads.~~
-
-**Acceptance**
-
-* ~~`POST /v1/machines` upserts & emits NATS `goosed.machines.enrolled`.~~
-* ~~`/v1/boot/ipxe?mac=` renders iPXE with one-time token (UUID).~~
-* ~~`/v1/render/kickstart` & `/v1/render/unattend` render from templates.~~
-* ~~`POST /v1/artifacts` returns presigned PUT URL (or presigned GET proxy if you prefer upload external).~~
-
-**Codex Prompt:**
-
-```
-Build API features.
-
-1) services/api/api.go:
-Define models (json, db tags):
-Machine {ID uuid, MAC string, Serial string, Profile map[string]any, CreatedAt, UpdatedAt}
-Run {ID uuid, MachineID uuid, BlueprintID uuid, Status string, StartedAt, FinishedAt, Logs string}
-Artifact {ID uuid, Kind string, SHA256 string, URL string, Meta map[string]any, CreatedAt}
-Blueprint {ID uuid, Name, OS, Version, Data map[string]any}
-Provide Store struct with DB, S3, Bus fields.
-
-2) services/api/routes.go (chi router):
-POST /v1/machines -> upsert by MAC, publish NATS "goosed.machines.enrolled" {machine_id,mac}
-GET /v1/boot/ipxe?mac= -> lookup machine; render pkg/render/templates/ipxe.tmpl with {Token, MAC, APIBase}; short TTL token (in-memory map for now)
-GET /v1/render/kickstart?machine_id= -> render kickstart.tmpl with profile vars
-GET /v1/render/unattend?machine_id= -> render unattend.xml.tmpl with profile vars
-POST /v1/artifacts -> body {kind, sha256, meta}; insert DB, return {upload_url} using s3.PresignGet or PUT variant
-POST /v1/agents/facts -> {machine_id, snapshot}; insert facts, publish "goosed.agent.facts"
-POST /v1/runs/start -> create running run
-POST /v1/runs/finish -> set status and logs
-
-Return full code for api.go and routes.go.
-```
-
-# Sprint 3 — Bootd & Artifacts-GW (Days 13–16)
-
-**Goals**
-
-* iPXE chain support (HTTP); branding files served.
-* Presign GET proxy; HTTP Range passthrough.
-
-**Tasks**
-
-1. Implement `services/bootd/http.go` (`/menu.ipxe`, `/branding/*`).
-2. Implement `services/artifacts-gw/presign.go` (`/v1/presign/get?key=...`).
-3. Helm values to expose both services.
-
-**Acceptance**
-
-* `GET /menu.ipxe?mac=...` returns script that `chain` loads API `/v1/boot/ipxe`.
-* Large downloads respect `Range:` header (verify by curl `--range`).
-
-**Codex Prompt:**
-
-```
-Implement:
-
-A) services/bootd/http.go:
-- GET /menu.ipxe?mac= -> returns:
-#!ipxe
-set api http://api.goose.local
-chain ${api}/v1/boot/ipxe?mac=${mac}
-- Serve /branding/* from embedded FS under infra/branding (use fs.Sub).
-
-B) services/artifacts-gw/presign.go:
-- GET /v1/presign/get?key=K&ttl=300 -> s3.PresignGet(bucket=env S3_BUCKET, key=K), returns JSON {url}
-- Document and pass Range headers through nginx ingress (add annotation snippet in code comment).
-
-Return full code and minimal Dockerfiles.
-```
-
 # Sprint 4 — Blueprints, Inventory, Orchestrator (Days 17–22)
 
 **Goals**
@@ -195,3 +111,169 @@ Create Windows agent:
 
 Return code and templates.
 ```
+
+# Sprint 7 — Artifacts, Bundler & Air-Gap (Days 34–40)
+
+**Goals**
+
+* `goosectl` to build/import bundles (tar.zst) with manifest signing (age/ed25519).
+* `artifacts-gw` upload/download UX polished.
+
+**Tasks**
+
+1. `services/bundler/bundler.go` & `signer.go`: build/import; sign/verify manifest.
+2. Extend API `/v1/artifacts` to accept register-only vs presign mode.
+3. Document in README the offline flow.
+
+**Acceptance**
+
+* `goosectl bundles build --artifacts-dir ./iso --output bundle-*.tar.zst` produces signed bundle.
+* `goosectl bundles import --file ...` registers and uploads to S3; API list shows artifacts.
+
+**Codex Prompt:**
+
+```
+Add a bundler CLI:
+
+A) services/bundler/cmd/goosectl/main.go:
+- cobra-based CLI with cmd: bundles build, bundles import
+- flags: --artifacts-dir, --images-file, --output for build; --file, --api for import
+
+B) services/bundler/bundler.go:
+- Build: walk artifacts-dir, compute sha256 for each file, create manifest.yaml with entries {path, sha256, size, kind inferred by extension}, tar.zst writer producing bundle file; then sign manifest via signer.
+
+C) services/bundler/signer.go:
+- Use age with env AGE_SECRET_KEY to sign manifest bytes; output signature in manifest as base64. Verify on import.
+
+D) Import path: read bundle, verify signature, upload objects to S3 using s3.PutObject, POST /v1/artifacts per file to register.
+
+Return all code files complete.
+```
+
+# Sprint 8 — Observability & Dashboards (Days 41–45)
+
+**Goals**
+
+* OTel Collector config + Prom/Loki/Tempo charts in `goosed-observability`.
+* Grafana dashboards for API latency, workflow durations, agent health.
+
+**Tasks**
+
+1. Fill `ops/otel/collector.yaml`, Prom scrape configs, Loki & Tempo configs.
+2. Create dashboards JSONs in `ops/grafana/dashboards/`.
+3. Helm chart `goosed-observability` to deploy stack with datasources from `ops/grafana/datasources.yaml`.
+
+**Acceptance**
+
+* Grafana shows: API p50/p95/p99, error rates; Orchestrator step histograms; Agent last-seen panel; S3 throughput.
+
+**Codex Prompt:**
+
+```
+Produce observability assets:
+
+1) ops/otel/collector.yaml: receivers (otlp http:4318), processors (batch), exporters:
+- prometheus (0.0.0.0:9464) OR prometheusremotewrite disabled, 
+- tempo (otlp to tempo),
+- logging (info)
+Include service pipelines for traces, metrics, logs.
+
+2) deploy/helm/goosed-observability:
+- Chart that deploys otel-collector (Deployment + Service), Prometheus, Loki, Tempo, Grafana with datasources from ops/grafana/datasources.yaml.
+- Grafana loads dashboards from configmap mounted at /var/lib/grafana/dashboards.
+
+3) ops/grafana/dashboards/api.json: panels for http_server_duration_seconds histogram (p95), request count, error rate; label by service="goosed-api".
+Create similar dashboards for orchestrator, bootd, agents.
+
+Return all YAML/JSON contents.
+```
+
+# Sprint 9 — Security Hardening (Days 46–50)
+
+**Goals**
+
+* One-time boot tokens (MAC-bound, TTL), TLS, secrets minimalism.
+* Age keys for bundle signing; token rotation for agents.
+
+**Tasks**
+
+1. Add token store to API (in-memory → Postgres with TTL).
+2. Enforce HTTPS everywhere (Ingress TLS; internal service env toggles).
+3. Implement agent token refresh endpoint.
+
+**Acceptance**
+
+* Boot tokens expire upon first use or TTL; re-use fails.
+* All ingress are TLS; agents can rotate token without full reinstall.
+
+**Codex Prompt:**
+
+```
+Harden auth:
+
+1) services/api/api.go: add TokenStore backed by Postgres with schema tokens(id uuid pk, mac text, token text unique, expires_at timestamptz, used bool default false).
+2) routes.go:
+- Issue token in /v1/boot/ipxe path if none active; mark used on first render.
+- POST /v1/agents/token/refresh {machine_id, old_token} -> returns new token with rotated expiry; invalidate old_token.
+
+3) Update Helm ingress templates for TLS termination with a self-signed secret placeholder.
+
+Provide full diff for updated files and token SQL migration 0002_tokens.sql.
+```
+
+# Sprint 10 — Polishing & Docs (Days 51–55)
+
+**Goals**
+
+* README completeness, `values-dev.yaml` wiring, example infra profiles, quickstart guide.
+* Smoke tests.
+
+**Tasks**
+
+1. Flesh out `README.md` with quickstart, dev, lab notes.
+2. Add example `infra/` profiles for two RHEL and one Windows machine.
+3. Add a `scripts/smoke.sh` to deploy and hit health endpoints.
+4. Ensure `helm lint` & `golangci-lint` clean.
+
+**Acceptance**
+
+* New dev can clone → `make tidy && helm upgrade --install` → working stack in <10 minutes (assuming S3/NATS/PG charts included).
+* Smoke tests green.
+
+**Codex Prompt:**
+
+```
+Finalize developer experience:
+
+1) Update README.md with:
+- Prereqs
+- Quickstart for Docker Desktop Kubernetes
+- How to set env (DB_DSN, NATS_URL, S3_*), how to render kickstart/unattend
+- Air-gap bundle build/import
+- PXE in lab vs dev caveats
+
+2) Create build/scripts/smoke.sh bash script that:
+- checks /healthz of every service via kubectl port-forward
+- asserts non-200 fails the script.
+
+3) Add helm values-dev.yaml defaults for DB_DSN, NATS_URL, S3 endpoint pointing to local charts; include how to install those charts.
+
+Return full file contents for README.md and smoke.sh.
+```
+
+## Optional After Sprints
+
+* **DHCP/TFTP** plugin for `bootd` (ProxyDHCP), only used in lab.
+* **Secure Boot** flow (signed iPXE or shim).
+* **UI** (Next.js/HTMX) after headless stabilizes.
+* **Repo mirrors** (RHEL BaseOS/AppStream snapshot), Windows driver catalog builder.
+* **TPM attestation** gate for agent registration.
+
+---
+
+### Daily Ritual (repeat each sprint)
+
+* `make tidy && make lint && make test`
+* `helm dependency build deploy/helm/umbrella && helm upgrade --install goose ...`
+* `kubectl -n goose logs -f deploy/<svc>`
+* `Update dashboards as you add new metrics.`
