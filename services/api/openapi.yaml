@@ -89,7 +89,7 @@ paths:
                 type: string
   /v1/artifacts:
     post:
-      summary: Create an artifact placeholder and obtain an upload URL
+      summary: Create an artifact placeholder for upload or registration
       operationId: createArtifact
       requestBody:
         required: true
@@ -105,6 +105,10 @@ paths:
                   type: string
                 meta:
                   type: object
+                mode:
+                  type: string
+                  enum: [presign, register]
+                  description: '"presign" (default) returns an upload URL; "register" skips presigning.'
       responses:
         '201':
           description: Artifact created
@@ -118,6 +122,13 @@ paths:
                   upload_url:
                     type: string
                     format: uri
+                  s3:
+                    type: object
+                    properties:
+                      bucket:
+                        type: string
+                      key:
+                        type: string
   /v1/agents/facts:
     post:
       summary: Record a snapshot of machine facts
