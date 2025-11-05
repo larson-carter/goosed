@@ -341,7 +341,7 @@ func Import(ctx context.Context, cfg ImportConfig) (*Manifest, error) {
 			}
 			continue
 		}
-		if header.Typeflag != tar.TypeReg && header.Typeflag != tar.TypeRegA {
+		if header.Typeflag != tar.TypeReg {
 			continue
 		}
 
