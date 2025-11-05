@@ -1,0 +1,65 @@
+enabled: true
+
+image:
+  repository: goosed/pxe-stack
+  tag: dev
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+hostNetwork: true
+
+serviceAccount:
+  create: true
+  name: ""
+
+podAnnotations: {}
+
+resources: {}
+
+nodeSelector: {}
+
+affinity: {}
+
+tolerations: []
+
+dhcp:
+  enabled: true
+  interface: eth0
+  rangeStart: 192.168.122.100
+  rangeEnd: 192.168.122.150
+  subnetMask: 255.255.255.0
+  router: 192.168.122.1
+  dns: 192.168.122.1
+  leaseSeconds: 86400
+  serverIP: 192.168.122.10
+  nextServer: 192.168.122.10
+  bootFile: undionly.kpxe
+
+tftp:
+  enabled: true
+  address: ":69"
+  root: /var/lib/tftpboot
+  timeoutSeconds: 5
+  extraVolumeMounts: []
+  extraVolumes: []
+
+http:
+  enabled: true
+  port: 8080
+  apiEndpoint: http://goosed-api:8080
+  brandingPath: ""
+
+extraEnv: []
+
+podSecurityContext:
+  runAsUser: 65532
+  runAsNonRoot: true
+  fsGroup: 65532
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    add:
+      - NET_ADMIN
+  runAsNonRoot: true

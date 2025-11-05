@@ -18,22 +18,15 @@
 3. [Microservices](#microservices)
 4. [Tech Stack](#tech-stack)
 5. [Repository Layout](#repository-layout)
-6. [Prerequisites](#prerequisites)
-7. [Quickstart (Docker Desktop Kubernetes)](#quickstart-docker-desktop-kubernetes)
-8. [Configuration & Environment](#configuration--environment)
-9. [Rendering Kickstart & Unattend](#rendering-kickstart--unattend)
-10. [Deploying the Stack](#deploying-the-stack)
-11. [PXE Boot: Dev vs Lab](#pxe-boot-dev-vs-lab)
-12. [RHEL/Rocky & Windows Provisioning Flows](#rhelrocky--windows-provisioning-flows)
-13. [Air-Gap Bundles (`goosectl`)](#air-gap-bundles-goosectl)
-14. [Observability](#observability)
-15. [Security](#security)
-16. [API Overview](#api-overview)
-17. [GitOps (`infra/`) Layout](#gitops-infra-layout)
-18. [Development Workflow](#development-workflow)
-19. [Makefile Targets](#makefile-targets)
-20. [Troubleshooting](#troubleshooting)
-21. [Roadmap](#roadmap)
+6. [Documentation Index](#documentation-index)
+7. [Observability](#observability)
+8. [Security](#security)
+9. [API Overview](#api-overview)
+10. [GitOps (`infra/`) Layout](#gitops-infra-layout)
+11. [Development Workflow](#development-workflow)
+12. [Makefile Targets](#makefile-targets)
+13. [Troubleshooting](#troubleshooting)
+14. [Roadmap](#roadmap)
 
 ## How to Use This README
 
@@ -61,7 +54,8 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
 | **api**                  | REST for machines, runs, artifacts, render endpoints (iPXE/Kickstart/Unattend), audit; issues one-time boot tokens | Postgres, NATS, S3          |
 | **bootd**                | PXE edge for **iPXE/HTTPBoot**; serves branding; chains to API render endpoints                                    | API, S3, NATS               |
-| **orchestrator**         | Workflow state machine (Boot → Provision → Post → Verify → Report)                                                 | API, NATS, Git (read infra) |
+| **pxe-stack**            | Optional DHCP/TFTP helpers to hand out iPXE binaries and bridge into the API
+                | Host network, branding data  |
 | **blueprints**           | Pulls/reads `infra/` blueprints & workflows, renders templates, emits update events                                | Git, API, NATS              |
 | **inventory**            | Consumes agent facts, stores snapshots, computes diffs                                                             | API, NATS                   |
 | **artifacts-gw**         | S3 presign proxy, optional range-request passthrough for large objects                                             | S3, API                     |
@@ -110,297 +104,15 @@ goosed/
 └─ infra/                         # GitOps desired state (blueprints/workflows/profiles/branding/policies)
 ```
 
-## Prerequisites
-
-Before you try to run goose’d locally make sure you have the following pieces in place:
-
-* **Docker Desktop 4.x with Kubernetes enabled** (or another single-node cluster such as kind/minikube).
-* **kubectl 1.29+** with a context that points at your local cluster.
-* **Helm 3.13+** for chart installation.
-* **Go 1.25+**, **make**, **git**, **bash**, **curl**, **jq**, and the Docker Compose plugin (used by `setup-env.sh`).
-* **golangci-lint v1.61.0+** so `make lint` matches CI behaviour.
-* Optional but convenient: **VS Code + Dev Containers** (the repo ships `.devcontainer/`).
-* Outbound internet access the first time you pull container images and Helm charts.
-
-## Quickstart (Docker Desktop Kubernetes)
-
-1. **Clone the repository**
-
-   ```bash
-   git clone <your_repo> goosed
-   cd goosed
-   ```
-
-2. **Bootstrap local tooling** – this pulls development containers, generates `.env.development`, and verifies Postgres/NATS/SeaweedFS reachability on the host.
-
-   ```bash
-   ./setup-env.sh
-   source .env.development
-   ```
-
-3. **Prepare Go modules**
-
-   ```bash
-   make tidy
-   ```
-
-4. **Build Containers**
-
-   ```bash
-   make build
-   ```
-
-5. **Install backing services into Kubernetes** (run once per cluster). The commands below create the `goose` namespace and install Postgres, NATS JetStream, and SeaweedFS with credentials that match `values-dev.yaml`.
-
-   ```bash
-   kubectl create namespace goose --dry-run=client -o yaml | kubectl apply -f -
-
-   helm repo add bitnami https://charts.bitnami.com/bitnami
-   helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-   helm repo add seaweedfs https://seaweedfs.github.io/seaweedfs/helm
-   helm repo update
-
-   helm upgrade --install goose-postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
-     --namespace goose \
-     --set auth.username=goosed \
-     --set auth.password=goosed \
-     --set auth.database=goosed \
-     --set primary.persistence.enabled=false
-
-   helm upgrade --install goose-nats nats/nats \
-     --namespace goose \
-     --set replicaCount=1 \
-     --set nats.jetstream.enabled=true \
-     --set nats.auth.enabled=false
-
-   helm upgrade --install goose-seaweedfs seaweedfs/seaweedfs \
-     --namespace goose \
-     --set master.replicaCount=1 \
-     --set filer.replicaCount=1 \
-     --set volume.replicaCount=1 \
-     --set s3.enabled=true \
-     --set s3.port=8333
-   ```
-
-6. **Build chart dependencies and deploy goose’d**
-
-   ```bash
-   helm dependency build deploy/helm/umbrella
-   helm upgrade --install goose deploy/helm/umbrella \
-     --namespace goose \
-     -f deploy/helm/umbrella/values-dev.yaml
-   ```
-
-7. **Verify pods** – everything should settle into `Running`/`Completed` within a couple of minutes.
-
-   ```bash
-   kubectl -n goose get pods
-   ```
-
-8. **Run the smoke test** – this port-forwards each service and fails fast if any `/healthz` endpoint returns a non-200.
-
-   ```bash
-   ./build/scripts/smoke.sh
-   ```
-
-Add `api.goose.local`, `boot.goose.local`, and `artifacts.goose.local` to `/etc/hosts` (pointing to `127.0.0.1`) if you want to exercise the ingress paths in a browser.
-
-The whole flow from clone → smoke test completes in well under ten minutes on a typical laptop once the initial container images are pulled.
-
-## Configuration & Environment
-
-`setup-env.sh` writes `.env.development` with sensible defaults for local binaries to talk to the backing services that run on your workstation:
-
-| Variable | Purpose |
-| --- | --- |
-| `DB_DSN` | Postgres connection string used by CLI tools or local services (`postgres://goosed:goosed@localhost:5432/goosed?sslmode=disable`). |
-| `NATS_URL` | JetStream endpoint (`nats://localhost:4222`). |
-| `S3_ENDPOINT` | SeaweedFS S3 gateway (`http://localhost:8333`). |
-| `S3_REGION` | Region hint for the S3 client (`us-east-1`). |
-| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | Development credentials (`goosed` / `goosedsecret`). |
-| `S3_DISABLE_TLS` | Set to `true` for plain HTTP during dev. |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Local OTel collector endpoint if you run one outside the cluster. |
-
-The Helm override file at `deploy/helm/umbrella/values-dev.yaml` mirrors those values. The top-level `backingServices` block documents the cluster hostnames for Postgres, NATS, and SeaweedFS, while each sub-chart override sets environment variables and OTLP endpoints (for example, `goosed-api.env.DB_DSN`). Update this file if you install the dependencies with different release names or credentials.
-
-Ingress hosts used by the dev configuration:
-
-* `api.goose.local`
-* `boot.goose.local`
-* `artifacts.goose.local`
-
-Point each host at `127.0.0.1` in `/etc/hosts` when testing through the ingress controller on Docker Desktop.
-
-## Rendering Kickstart & Unattend
-
-1. **Expose the API locally**
-
-   ```bash
-   kubectl -n goose port-forward svc/goosed-api 18080:8080
-   ```
-
-   Leave this running in a separate terminal.
-
-2. **Enroll a machine** – the API stores machine definitions. Use the sample profiles under `infra/machine-profiles/lab-a/rack-01/` as a starting point. The example below registers the first RHEL node.
-
-   ```bash
-   cat <<'JSON' > /tmp/rhel-machine.json
-   {
-     "mac": "00:11:22:aa:bb:cc",
-     "serial": "LABA-RACK01-01",
-     "profile": {
-       "blueprint": "rhel/9/base",
-       "workflow": "rhel-default",
-       "hostname": "laba-r01-n01.goose.local",
-       "packages": ["vim", "tmux", "git"],
-       "kickstart": {
-         "timezone": "UTC",
-         "rootPasswordHash": "$6$rounds=4096$goosedlab$0cY9wj7v2uZB7Q2yEn8g9orL49HRvPxvXB1EZVZhG7T0ioigj8O4d2o2i0L1.BFQJ6xXzB/8C2Tkq5VdJtA1p."
-       }
-     }
-   }
-   JSON
-
-   MACHINE_ID=$(curl -sSf -X POST http://127.0.0.1:18080/v1/machines \
-     -H 'Content-Type: application/json' \
-     --data @/tmp/rhel-machine.json | jq -r '.machine.id')
-   ```
-
-3. **Render Kickstart or Unattend**
-
-   ```bash
-   curl -sSf "http://127.0.0.1:18080/v1/render/kickstart?machine_id=${MACHINE_ID}" > kickstart.cfg
-   curl -sSf "http://127.0.0.1:18080/v1/render/unattend?machine_id=${MACHINE_ID}" > unattend.xml
-   ```
-
-   Swap in the Windows profile from `infra/machine-profiles/lab-a/rack-01/10-mac-00aa11bb22cc-windows.yaml` when you need an Unattend payload that includes driver locations and post-install commands.
-
-4. **Clean up** – stop the port-forward (`Ctrl+C`). The issued token is single-use; the next render call will mint a new one automatically.
-
-## Deploying the Stack
-
-**Umbrella chart**
-
-```bash
-helm dependency build deploy/helm/umbrella
-helm upgrade --install goose deploy/helm/umbrella \
-  --namespace goose \
-  -f deploy/helm/umbrella/values-dev.yaml
-```
-
-Layer extra `-f` files or `--set key=value` flags when you need to override endpoints, credentials, or image tags. Every service chart lives under `deploy/helm/<service>/` and can be upgraded independently during development:
-
-```bash
-helm upgrade --install goose-api deploy/helm/goosed-api \
-  --namespace goose \
-  --set image.tag=$(git rev-parse --short HEAD)
-```
-
-## PXE Boot: Dev vs Lab
-
-* **Dev (Docker Desktop K8s)**
-  * Docker Desktop does not expose raw L2 networking, so rely on **HTTPBoot/iPXE** with static host mappings.
-  * Run DHCP/TFTP in a lightweight VM (dnsmasq) outside the cluster or hand out iPXE USB sticks for quick tests.
-  * Port-forward `bootd` when you need to exercise the menu (`kubectl -n goose port-forward svc/goosed-bootd 18081:8080`). Branding assets live under `infra/branding/` and hot-reload without redeploying the chart.
-  * Keep large artifacts (ISOs/WIMs) in SeaweedFS via the `goose-seaweedfs` release; the ingress rules already forward Range requests to support resumable downloads.
-
-* **Lab / Air-gapped**
-  * Deploy `bootd` on hardware that sits directly on the provisioning VLAN and enable **ProxyDHCP + TFTP** if legacy BIOS machines still exist.
-  * Mirror container images, RHEL repos, and Windows drivers using `goosectl bundles` so the lab never needs internet access.
-  * Terminate TLS at the edge (ingress controller or metal load balancer) and ensure `bootd` trusts the internal CA when chaining to the API.
-  * When spanning racks, place SeaweedFS volumes close to the PXE network to avoid saturating the control-plane uplinks with large ISO fetches.
-
-> UEFI Secure Boot: sign iPXE or use a trusted shim if you need Secure Boot enabled.
-
-## RHEL/Rocky & Windows Provisioning Flows
-
-### RHEL & Rocky (Kickstart)
-
-1. PXE → iPXE → `GET /v1/boot/ipxe?mac=...` (API) → dynamic ks URL
-2. Kickstart renders with repo mirrors, partitioning, users, `%post` installs **agent-rhel**
-3. First boot: agent runs ops (packages, hardening), posts **facts**, orchestrator marks **run** done
-
-**Kickstart template**: `pkg/render/templates/kickstart.tmpl`
-
-Rocky Linux shares the same Kickstart flow as RHEL. Use `infra/blueprints/rocky/9/base/blueprint.yaml`
-and `infra/workflows/rocky-default.yaml` together with a machine profile such as
-`infra/machine-profiles/lab-a/rack-01/03-mac-001122ccddee.yaml` when testing against the Rocky
-Linux ISO in a lab or local VM.
-
-### Windows (WinPE/Unattend)
-
-1. iPXE + **wimboot** loads WinPE (HTTP)
-2. `provision.ps1` fetches Unattend, DISM /Apply-Image, injects drivers, configures **agent-windows**
-3. Agent posts **facts**; orchestrator completes run
-
-**Unattend template**: `pkg/render/templates/unattend.xml.tmpl`
-**WinPE script**: `services/agents/windows/provision.ps1`
-
-## Air-Gap Bundles (`goosectl`)
-
-Bundle content: images, ISOs/WIMs, drivers, metadata manifest. Signed with **age/Ed25519**.
-
-Export an **age** secret key (`AGE-SECRET-KEY-...`) before building. To avoid placing the private key on the import host, derive a verifier public key (base64 Ed25519) once and store it securely:
-
-```bash
-export AGE_SECRET_KEY=$(cat ~/.config/goosed/age.key)
-export AGE_PUBLIC_KEY=$(go run - <<'EOF'
-package main
-
-import (
-        "fmt"
-
-        "goosed/services/bundler"
-)
-
-func main() {
-        signer, err := bundler.NewSignerFromEnv()
-        if err != nil {
-                panic(err)
-        }
-        fmt.Println(signer.PublicKeyBase64())
-}
-EOF
-)
-```
-
-`AGE_SECRET_KEY` is required for signing; either `AGE_SECRET_KEY` **or** `AGE_PUBLIC_KEY` must be present when importing.
-
-**Build**
-
-```bash
-go run ./services/bundler/cmd/goosectl \
-  bundles build \
-  --artifacts-dir ./artifacts \
-  --images-file ./images.txt \
-  --output ./bundle-$(date +%Y%m%d).tar.zst
-```
-
-**Import**
-
-```bash
-export AGE_PUBLIC_KEY=<base64-ed25519-from-above>   # or reuse AGE_SECRET_KEY
-export S3_ENDPOINT=https://seaweedfs.example.local:8333
-export S3_ACCESS_KEY=...
-export S3_SECRET_KEY=...
-export S3_REGION=us-east-1
-export S3_DISABLE_TLS=false
-
-go run ./services/bundler/cmd/goosectl \
-  bundles import \
-  --file ./bundle-20251104.tar.zst \
-  --api https://api.goose.local
-```
-
-**Offline flow**
-
-1. On a connected workstation, run the build command to generate the `bundle-*.tar.zst` archive.
-2. Transfer the bundle and the `AGE_PUBLIC_KEY` value to the air-gapped environment (keep the secret key offline).
-3. Configure the air-gapped host with S3 credentials, `AGE_PUBLIC_KEY`, and the API URL, then run the import command.
-4. `goosectl` verifies the signed manifest, uploads each object via the S3 API with checksums, and registers it through `POST /v1/artifacts` in register-only mode.
-5. Confirm availability with `GET /v1/artifacts` or the dashboard before scheduling installs.
-
----
+## Documentation Index
+
+* [Getting Started (Prereqs + Quickstart)](docs/getting-started.md)
+* [Deploying goose'd in Kubernetes](docs/deploying.md)
+* [PXE Boot Strategies: Development vs Lab](docs/pxe-environments.md)
+* [PXE Booting VMware Fusion Guests](docs/vmware-fusion.md)
+* [RHEL/Rocky and Windows Provisioning Flows](docs/provisioning-flows.md)
+* [Building and Importing Air-Gap Bundles](docs/air-gap-bundles.md)
+* [Uploading Rocky Linux ISOs to SeaweedFS](docs/seaweedfs-iso-upload.md)
 
 ## Observability
 
