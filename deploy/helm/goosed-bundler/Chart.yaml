@@ -1,0 +1,6 @@
+apiVersion: v2
+name: goosed-bundler
+description: Helm chart packaging jobs for goosectl bundle workflows
+version: 0.1.0
+appVersion: "0.1.0"
+type: application

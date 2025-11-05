@@ -1,0 +1,28 @@
+apiVersion: v2
+name: goosed-umbrella
+description: Umbrella chart for the goose'd provisioning stack
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: goosed-api
+    version: 0.1.0
+    repository: file://../goosed-api
+  - name: goosed-bootd
+    version: 0.1.0
+    repository: file://../goosed-bootd
+  - name: goosed-blueprints
+    version: 0.1.0
+    repository: file://../goosed-blueprints
+  - name: goosed-orchestrator
+    version: 0.1.0
+    repository: file://../goosed-orchestrator
+  - name: goosed-inventory
+    version: 0.1.0
+    repository: file://../goosed-inventory
+  - name: goosed-artifacts-gw
+    version: 0.1.0
+    repository: file://../goosed-artifacts-gw
+  - name: goosed-observability
+    version: 0.1.0
+    repository: file://../goosed-observability

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "goosed-artifacts-gw.fullname" . }}
+  labels:
+    {{- include "goosed-artifacts-gw.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+  selector:
+    {{- include "goosed-artifacts-gw.selectorLabels" . | nindent 4 }}

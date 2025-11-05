@@ -1,0 +1,33 @@
+apiVersion: goosed.io/v1alpha1
+kind: MachineProfile
+metadata:
+  name: lab-a-rack01-node01
+  labels:
+    site: lab-a
+    rack: rack-01
+spec:
+  machine:
+    mac: "00:11:22:AA:BB:CC"
+    serial: LABA-RACK01-01
+    assetTag: LAB-A-R01-N01
+  blueprint: rhel/9/base
+  workflow: rhel-default
+  profile:
+    hostname: laba-r01-n01.goose.local
+    packages:
+      - vim
+      - tmux
+      - git
+    network:
+      interface: eno1
+      ipv4:
+        address: 192.168.110.21/24
+        gateway: 192.168.110.1
+        dns:
+          - 192.168.110.11
+    kickstart:
+      timezone: UTC
+      rootPasswordHash: "$6$rounds=4096$goosedlab$0cY9wj7v2uZB7Q2yEn8g9orL49HRvPxvXB1EZVZhG7T0ioigj8O4d2o2i0L1.BFQJ6xXzB/8C2Tkq5VdJtA1p."
+    repos:
+      baseos: http://mirror.lab-a.local/rhel/9/BaseOS
+      appstream: http://mirror.lab-a.local/rhel/9/AppStream

@@ -1,0 +1,41 @@
+apiVersion: goosed.io/v1alpha1
+kind: MachineProfile
+metadata:
+  name: lab-a-rack01-node02
+  labels:
+    site: lab-a
+    rack: rack-01
+spec:
+  machine:
+    mac: "00:11:22:BB:CC:DD"
+    serial: LABA-RACK01-02
+    assetTag: LAB-A-R01-N02
+  blueprint: rhel/9/base
+  workflow: rhel-default
+  profile:
+    hostname: laba-r01-n02.goose.local
+    packages:
+      - podman
+      - python3
+    network:
+      interface: eno1
+      ipv4:
+        address: 192.168.110.22/24
+        gateway: 192.168.110.1
+        dns:
+          - 192.168.110.11
+    kickstart:
+      timezone: America/Los_Angeles
+      ntpServers:
+        - time1.lab-a.local
+        - time2.lab-a.local
+      users:
+        - name: ops
+          groups: wheel
+          sshAuthorizedKeys:
+            - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMockKeyForDocsOnly lab-a-ops"
+    storage:
+      layout: raid1
+      disks:
+        - /dev/sda
+        - /dev/sdb

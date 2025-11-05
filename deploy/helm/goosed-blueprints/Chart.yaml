@@ -1,0 +1,6 @@
+apiVersion: v2
+name: goosed-blueprints
+description: Helm chart for the goose'd blueprints service
+version: 0.1.0
+appVersion: "0.1.0"
+type: application

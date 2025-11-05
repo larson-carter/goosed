@@ -1,0 +1,71 @@
+# Development defaults for deploying goose'd on a single-node Kubernetes cluster.
+# These values assume that Postgres, NATS JetStream, and SeaweedFS S3 are
+# installed into the same namespace using the release names documented in the README.
+
+backingServices:
+  postgres:
+    host: goose-postgres-postgresql.goose.svc.cluster.local
+    port: 5432
+    user: goosed
+    password: goosed
+    database: goosed
+  nats:
+    url: nats://goose-nats.goose.svc.cluster.local:4222
+  s3:
+    endpoint: http://goose-seaweedfs-s3.goose.svc.cluster.local:8333
+    region: us-east-1
+    accessKey: goosed
+    secretKey: goosedsecret
+    bucket: goosed-artifacts
+    disableTLS: "true"
+
+# Per-chart overrides -------------------------------------------------------
+
+# API service configuration
+goosed-api:
+  otel:
+    exporterEndpoint: http://goosed-observability-otel-collector:4318
+  env:
+    DB_DSN: postgres://goosed:goosed@goose-postgres-postgresql.goose.svc.cluster.local:5432/goosed?sslmode=disable
+    NATS_URL: nats://goose-nats.goose.svc.cluster.local:4222
+    S3_ENDPOINT: http://goose-seaweedfs-s3.goose.svc.cluster.local:8333
+    S3_REGION: us-east-1
+    S3_ACCESS_KEY: goosed
+    S3_SECRET_KEY: goosedsecret
+    S3_BUCKET: goosed-artifacts
+    S3_DISABLE_TLS: "true"
+
+# Artifacts gateway needs the same S3 settings.
+goosed-artifacts-gw:
+  otel:
+    exporterEndpoint: http://goosed-observability-otel-collector:4318
+  env:
+    S3_ENDPOINT: http://goose-seaweedfs-s3.goose.svc.cluster.local:8333
+    S3_REGION: us-east-1
+    S3_ACCESS_KEY: goosed
+    S3_SECRET_KEY: goosedsecret
+    S3_BUCKET: goosed-artifacts
+    S3_DISABLE_TLS: "true"
+
+# Bootd serves PXE menus and branding.
+goosed-bootd:
+  otel:
+    exporterEndpoint: http://goosed-observability-otel-collector:4318
+  ingress:
+    host: boot.goose.local
+
+# Blueprint renderer watches the infra/ git directory mounted via ConfigMap or CSI.
+goosed-blueprints:
+  otel:
+    exporterEndpoint: http://goosed-observability-otel-collector:4318
+  env:
+    INFRA_PATH: /infra
+
+# Inventory and Orchestrator only need the OTLP endpoint today but keep overrides consistent.
+goosed-inventory:
+  otel:
+    exporterEndpoint: http://goosed-observability-otel-collector:4318
+
+goosed-orchestrator:
+  otel:
+    exporterEndpoint: http://goosed-observability-otel-collector:4318

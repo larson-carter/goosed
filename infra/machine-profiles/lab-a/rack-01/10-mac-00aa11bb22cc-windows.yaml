@@ -1,0 +1,37 @@
+apiVersion: goosed.io/v1alpha1
+kind: MachineProfile
+metadata:
+  name: lab-a-rack01-win01
+  labels:
+    site: lab-a
+    rack: rack-01
+    os: windows
+spec:
+  machine:
+    mac: "00:AA:11:BB:22:CC"
+    serial: LABA-RACK01-W01
+    assetTag: LAB-A-R01-W01
+  blueprint: windows/11/base
+  workflow: windows-default
+  profile:
+    hostname: laba-r01-win01.goose.local
+    unattend:
+      locale: en-US
+      timezone: UTC
+      administratorPassword: "Passw0rd!"
+      firstLogonCommands:
+        - command: powershell.exe -File C:\\Scripts\\install-tools.ps1
+    drivers:
+      storage:
+        - \share\drivers\storage\lsi\drv.inf
+      network:
+        - \share\drivers\network\intel\e1d.inf
+    postInstall:
+      joinDomain: false
+      installChocoPackages:
+        - git
+        - vscode
+    artifacts:
+      gooseAgent:
+        url: https://artifacts.goose.local/agents/windows/agent.zip
+        checksum: 6f20e2c2deadc0de6f20e2c2deadc0de
