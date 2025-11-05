@@ -16,15 +16,6 @@ type factModel struct {
 
 func (factModel) TableName() string { return "facts" }
 
-func (f factModel) toMap() map[string]any {
-	return map[string]any{
-		"id":         f.ID,
-		"machine_id": f.MachineID,
-		"snapshot":   mapFromJSONMap(f.Snapshot),
-		"created_at": f.CreatedAt,
-	}
-}
-
 type auditModel struct {
 	ID      int64             `gorm:"type:bigserial;primaryKey"`
 	Actor   string            `gorm:"type:text;not null"`
