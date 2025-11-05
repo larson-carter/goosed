@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-* **One platform** for RHEL + Windows imaging/install flows
+* **One platform** for RHEL/Rocky + Windows imaging/install flows
 * **Headless-first**: CLI + API now, UI later
 * **Git as source of truth**: blueprints/workflows in Git; facts & run history tracked
 * **Air-gap ready**: import/export signed bundles to offline S3 (SeaweedFS everywhere, mirror as needed)
@@ -24,7 +24,7 @@
 9. [Rendering Kickstart & Unattend](#rendering-kickstart--unattend)
 10. [Deploying the Stack](#deploying-the-stack)
 11. [PXE Boot: Dev vs Lab](#pxe-boot-dev-vs-lab)
-12. [RHEL & Windows Provisioning Flows](#rhel--windows-provisioning-flows)
+12. [RHEL/Rocky & Windows Provisioning Flows](#rhelrocky--windows-provisioning-flows)
 13. [Air-Gap Bundles (`goosectl`)](#air-gap-bundles-goosectl)
 14. [Observability](#observability)
 15. [Security](#security)
@@ -306,15 +306,20 @@ helm upgrade --install goose-api deploy/helm/goosed-api \
 
 > UEFI Secure Boot: sign iPXE or use a trusted shim if you need Secure Boot enabled.
 
-## RHEL & Windows Provisioning Flows
+## RHEL/Rocky & Windows Provisioning Flows
 
-### RHEL (Kickstart)
+### RHEL & Rocky (Kickstart)
 
 1. PXE → iPXE → `GET /v1/boot/ipxe?mac=...` (API) → dynamic ks URL
 2. Kickstart renders with repo mirrors, partitioning, users, `%post` installs **agent-rhel**
 3. First boot: agent runs ops (packages, hardening), posts **facts**, orchestrator marks **run** done
 
 **Kickstart template**: `pkg/render/templates/kickstart.tmpl`
+
+Rocky Linux shares the same Kickstart flow as RHEL. Use `infra/blueprints/rocky/9/base/blueprint.yaml`
+and `infra/workflows/rocky-default.yaml` together with a machine profile such as
+`infra/machine-profiles/lab-a/rack-01/03-mac-001122ccddee.yaml` when testing against the Rocky
+Linux ISO in a lab or local VM.
 
 ### Windows (WinPE/Unattend)
 
@@ -432,12 +437,15 @@ Key endpoints (see `services/api/openapi.yaml`):
 infra/
   blueprints/
     rhel/9/base/blueprint.yaml
+    rocky/9/base/blueprint.yaml
     windows/11/base/blueprint.yaml
   workflows/
     rhel-default.yaml
+    rocky-default.yaml
     windows-default.yaml
   machine-profiles/
     lab-a/rack-01/01-mac-001122aabbcc.yaml
+    lab-a/rack-01/03-mac-001122ccddee.yaml
   branding/branding.yaml
   policies/cis/{rhel9.yaml, win11.yaml}
 ```
