@@ -16,11 +16,13 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Init configures OpenTelemetry tracing, propagation, and structured logging for a service.
@@ -48,9 +50,9 @@ func Init(ctx context.Context, serviceName string) (func(context.Context) error,
 		return nil, nil, nil, fmt.Errorf("telemetry: create resource: %w", err)
 	}
 
-	tracerProvider := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(res),
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
 	)
 
 	otel.SetTracerProvider(tracerProvider)
@@ -101,7 +103,7 @@ func (sr *statusRecorder) WriteHeader(code int) {
 	sr.ResponseWriter.WriteHeader(code)
 }
 
-func newTraceExporter(ctx context.Context, endpoint string) (*otlptracehttp.Exporter, error) {
+func newTraceExporter(ctx context.Context, endpoint string) (*otlptrace.Exporter, error) {
 	var opts []otlptracehttp.Option
 
 	parsed, err := url.Parse(endpoint)
