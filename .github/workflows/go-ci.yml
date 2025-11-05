@@ -1,0 +1,34 @@
+name: Go CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  format-and-lint:
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: go1.25.0
+      GOBIN: ${{ github.workspace }}/bin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+
+      - name: Verify formatting
+        run: ./build/scripts/format.sh --check
+
+      - name: Install golangci-lint
+        run: |
+          # Pin to commit 2691aacde615 for Go 1.25 compatibility until an official release is available.
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@2691aacde615
+
+      - name: Add GOBIN to PATH
+        run: echo "$GOBIN" >> "$GITHUB_PATH"
+
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
