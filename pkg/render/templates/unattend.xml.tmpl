@@ -40,6 +40,13 @@
       </OOBE>
       <RegisteredOwner>goosed</RegisteredOwner>
       <TimeZone>UTC</TimeZone>
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Goosed Agent Provisioning</Description>
+          <CommandLine>powershell.exe -ExecutionPolicy Bypass -File "C:\ProgramData\Goosed\provision.ps1" -Api "{{ .APIBase }}" -Token "{{ .Token }}" -MachineId "{{ .Machine.ID }}"</CommandLine>
+        </SynchronousCommand>
+      </FirstLogonCommands>
     </component>
   </settings>
 </unattend>

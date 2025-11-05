@@ -101,9 +101,22 @@ func (a *API) handleUnattend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := a.tokens.issue(machine.MAC)
+
+	apiBase := a.config.APIBase
+	if apiBase == "" {
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		apiBase = fmt.Sprintf("%s://%s", scheme, r.Host)
+	}
+
 	rendered, err := a.renderer.Render("unattend.xml.tmpl", map[string]any{
 		"Machine": machine,
 		"Profile": machine.Profile,
+		"Token":   token,
+		"APIBase": apiBase,
 	})
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err)

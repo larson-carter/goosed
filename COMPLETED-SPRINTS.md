@@ -260,3 +260,41 @@ curl -fsSL {{ .AgentInstallURL }} | bash -s -- --api {{ .APIBase }} --token {{ .
 
 Return file contents.
 ```
+
+# Sprint 6 — Windows Agent MVP (Days 28–33)
+
+**Goals**
+
+* WinPE `provision.ps1` skeleton calls API and deploys agent service.
+* Windows agent posts facts once.
+
+**Tasks**
+
+1. `services/agents/windows/provision.ps1` does DISM/WMI facts sample + registers agent.
+2. `services/agents/windows/service.go` is a Windows service (golang.org/x/sys/windows/svc) posting snapshot.
+3. Add `pkg/render/templates/unattend.xml.tmpl` to place agent config at first boot.
+
+**Acceptance**
+
+* In a Win11 VM, provision → service posts facts to API and `postinstall_done:true`.
+
+**Codex Prompt:**
+
+```
+Create Windows agent:
+
+1) services/agents/windows/provision.ps1:
+- Param($Api, $Token, $MachineId)
+- Collect WMI: OS caption, version, BIOS serial
+- Invoke-RestMethod POST $Api/v1/agents/facts with JSON {machine_id, snapshot:{os, version, serial, postinstall_done:true}}
+- Write C:\ProgramData\Goosed\agent.conf with api/token/machine_id
+- Register service 'GoosedAgent' to run agent executable.
+
+2) services/agents/windows/service.go:
+- Implement basic Windows service that reads config and posts a heartbeat fact.
+
+3) pkg/render/templates/unattend.xml.tmpl:
+- Insert FirstLogonCommands to run powershell provisioning with API and token arguments.
+
+Return code and templates.
+```
