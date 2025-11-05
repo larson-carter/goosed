@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GOTOOLCHAIN: go1.25.0
+      GOBIN: ${{ github.workspace }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,9 +22,13 @@ jobs:
       - name: Verify formatting
         run: ./build/scripts/format.sh --check
 
+      - name: Install golangci-lint
+        run: |
+          # Pin to commit 2691aacde615 for Go 1.25 compatibility until an official release is available.
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@2691aacde615
+
+      - name: Add GOBIN to PATH
+        run: echo "$GOBIN" >> "$GITHUB_PATH"
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.61.0
-          install-mode: goinstall
-          args: ./...
+        run: golangci-lint run ./...
