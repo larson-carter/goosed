@@ -49,8 +49,6 @@ Deployment env includes OTEL_EXPORTER_OTLP_ENDPOINT, pod has liveness/readiness 
 Return full file contents for the above (create/overwrite).
 ```
 
----
-
 # Sprint 1 — Database, Event Bus, S3 (Days 4–7)
 
 **Goals**
@@ -104,8 +102,6 @@ Configure AWS SDK v2 with custom endpoint & static creds, toggle TLS by env.
 Return full code.
 ```
 
----
-
 # Sprint 2 — API Contracts & Render Endpoints (Days 8–12)
 
 **Goals**
@@ -153,8 +149,6 @@ POST /v1/runs/finish -> set status and logs
 Return full code for api.go and routes.go.
 ```
 
----
-
 # Sprint 3 — Bootd & Artifacts-GW (Days 13–16)
 
 **Goals**
@@ -191,8 +185,6 @@ B) services/artifacts-gw/presign.go:
 
 Return full code and minimal Dockerfiles.
 ```
-
----
 
 # Sprint 4 — Blueprints, Inventory, Orchestrator (Days 17–22)
 
@@ -232,8 +224,6 @@ C) Orchestrator
 Return complete code for these files with error handling and logging.
 ```
 
----
-
 # Sprint 5 — RHEL Agent MVP (Days 23–27)
 
 **Goals**
@@ -271,8 +261,6 @@ curl -fsSL {{ .AgentInstallURL }} | bash -s -- --api {{ .APIBase }} --token {{ .
 
 Return file contents.
 ```
-
----
 
 # Sprint 6 — Windows Agent MVP (Days 28–33)
 
@@ -312,8 +300,6 @@ Create Windows agent:
 Return code and templates.
 ```
 
----
-
 # Sprint 7 — Artifacts, Bundler & Air-Gap (Days 34–40)
 
 **Goals**
@@ -351,8 +337,6 @@ D) Import path: read bundle, verify signature, upload objects to S3 using s3.Put
 
 Return all code files complete.
 ```
-
----
 
 # Sprint 8 — Observability & Dashboards (Days 41–45)
 
@@ -392,8 +376,6 @@ Create similar dashboards for orchestrator, bootd, agents.
 Return all YAML/JSON contents.
 ```
 
----
-
 # Sprint 9 — Security Hardening (Days 46–50)
 
 **Goals**
@@ -426,8 +408,6 @@ Harden auth:
 
 Provide full diff for updated files and token SQL migration 0002_tokens.sql.
 ```
-
----
 
 # Sprint 10 — Polishing & Docs (Days 51–55)
 
@@ -469,8 +449,6 @@ Finalize developer experience:
 Return full file contents for README.md and smoke.sh.
 ```
 
----
-
 ## Optional After Sprints
 
 * **DHCP/TFTP** plugin for `bootd` (ProxyDHCP), only used in lab.
@@ -486,6 +464,4 @@ Return full file contents for README.md and smoke.sh.
 * `make tidy && make lint && make test`
 * `helm dependency build deploy/helm/umbrella && helm upgrade --install goose ...`
 * `kubectl -n goose logs -f deploy/<svc>`
-* Update dashboards as you add new metrics.
-
-If you want, I can immediately generate the **Sprint 0** files (telemetry, entrypoints, Makefile, and the `goosed-api` Helm templates) with working code so you can run the first `helm upgrade` right away.
+* `Update dashboards as you add new metrics.`

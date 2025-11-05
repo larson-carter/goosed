@@ -2,8 +2,6 @@
 
 **Golang Operating System Environment Deployer** — a headless-first, Git-driven PXE platform for **RHEL** and **Windows** provisioning designed for **air-gapped labs**.
 
----
-
 ## TL;DR
 
 * **One platform** for RHEL + Windows imaging/install flows
@@ -12,8 +10,6 @@
 * **Air-gap ready**: import/export signed bundles to offline S3 (Ceph RGW / SeaweedFS)
 * **Custom boot UX**: iPXE/GRUB/pxelinux theming + one-time boot tokens
 * **Observability**: OpenTelemetry → Prometheus/Loki/Tempo → Grafana
-
----
 
 ## Table of Contents
 
@@ -35,9 +31,6 @@
 16. [Makefile Targets](#makefile-targets)
 17. [Troubleshooting](#troubleshooting)
 18. [Roadmap](#roadmap)
-19. [License](#license)
-
----
 
 ## Architecture
 
@@ -50,8 +43,6 @@ goose’d is a set of Go microservices (running as containers) plus a small set 
 * **Observability**: OTel → Prometheus (metrics), Loki (logs), Tempo (traces), Grafana (dashboards).
 
 Everything is **headless** (API + CLI). Add the UI later without blocking provisioning.
-
----
 
 ## Microservices
 
@@ -69,8 +60,6 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 
 **Event bus**: subjects like `goosed.machines.enrolled`, `goosed.runs.started`, `goosed.agent.facts`, `goosed.blueprints.updated`.
 
----
-
 ## Tech Stack
 
 * **Language**: Go 1.22+
@@ -80,8 +69,6 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 * **Tracing/Logs/Metrics**: OpenTelemetry → Tempo/Loki/Prometheus → Grafana
 * **Kubernetes**: Docker Desktop Kubernetes (dev) & air-gapped K8s/VMs (lab)
 * **Templates**: Go `text/template` for Kickstart, Unattend, iPXE
-
----
 
 ## Repository Layout
 
@@ -111,8 +98,6 @@ goosed/
 │     └─ windows/                 # Windows service + WinPE bootstrap
 └─ infra/                         # GitOps desired state (blueprints/workflows/profiles/branding/policies)
 ```
-
----
 
 ## Getting Started (Dev on Docker Desktop K8s)
 
@@ -161,8 +146,6 @@ kubectl -n goose port-forward svc/goosed-api 8080:8080 & sleep 1
 curl -f localhost:8080/healthz
 ```
 
----
-
 ## Configuration & Environment
 
 Common envs (surfaced via Helm values):
@@ -182,8 +165,6 @@ Ingress hosts (dev):
 
 * `api.goose.local` (map to 127.0.0.1 via `/etc/hosts` if needed)
 
----
-
 ## Deploying the Stack
 
 **Umbrella chart**
@@ -196,16 +177,12 @@ helm upgrade --install goose deploy/helm/umbrella -n goose \
 
 **Per-service charts** live under `deploy/helm/<service>/` and are referenced by the umbrella.
 
----
-
 ## PXE Boot: Dev vs Lab
 
 * **Dev (Docker Desktop K8s)**: Broadcast DHCP/TFTP is hard; prefer **HTTPBoot/iPXE**. Run DHCP externally or use a small VM.
 * **Lab (air-gapped)**: Run **bootd** on a **bridged** host/VM on the PXE VLAN with **ProxyDHCP + TFTP** (optional) and HTTP for large artifacts. Point bootd to the API and S3 endpoints.
 
 > UEFI Secure Boot: sign iPXE or use a trusted shim if you need Secure Boot enabled.
-
----
 
 ## RHEL & Windows Provisioning Flows
 
@@ -225,8 +202,6 @@ helm upgrade --install goose deploy/helm/umbrella -n goose \
 
 **Unattend template**: `pkg/render/templates/unattend.xml.tmpl`
 **WinPE script**: `services/agents/windows/provision.ps1`
-
----
 
 ## Air-Gap Bundles (`goosectl`)
 
@@ -270,8 +245,6 @@ The import uploads to S3 and registers artifacts via the API.
 
 Helm chart: `deploy/helm/goosed-observability`.
 
----
-
 ## Security
 
 * **TLS** at ingress; internal services honor TLS toggles.
@@ -279,8 +252,6 @@ Helm chart: `deploy/helm/goosed-observability`.
 * **Bundle signing** via age/Ed25519; verify on import.
 * **Least secrets** on disk; agent tokens rotate.
 * Optional: TPM attestation gate before agent registration (post-MVP).
-
----
 
 ## API Overview
 
@@ -293,8 +264,6 @@ Key endpoints (see `services/api/openapi.yaml`):
 * `POST /v1/artifacts` — register artifact & return presigned URL
 * `POST /v1/agents/facts` — store facts snapshot & emit event
 * `POST /v1/runs/start|finish` — run state transitions
-
----
 
 ## GitOps (`infra/`) Layout
 
@@ -316,16 +285,12 @@ infra/
 * `blueprints` + `workflows` drive renders; `machine-profiles` bind a machine to a blueprint and variables.
 * Agent **facts** and run logs are stored in DB (optionally committed back to Git later).
 
----
-
 ## Development Workflow
 
 * Use the **devcontainer** to get Go, kubectl, Helm, golangci-lint, etc.
 * Implement features in `pkg/` libs first, then wire in services.
 * Every service exposes `/healthz`, `/readyz`, and `/metrics`.
 * Keep OpenTelemetry context propagation when calling each other and NATS.
-
----
 
 ## Makefile Targets
 
@@ -338,8 +303,6 @@ run-api     # go run services/api/cmd/api/main.go
 deploy      # helm upgrade --install umbrella (values-dev)
 undeploy    # helm uninstall
 ```
-
----
 
 ## Troubleshooting
 
@@ -363,8 +326,6 @@ undeploy    # helm uninstall
 
 * Check JetStream stream/consumer creation and `durable` names; confirm `NATS_URL`.
 
----
-
 ## Roadmap
 
 * DHCP/TFTP (ProxyDHCP) module for **bootd** (lab only)
@@ -373,15 +334,3 @@ undeploy    # helm uninstall
 * Repo mirrors (RHEL BaseOS/AppStream) & Windows driver catalog
 * TPM attestation before agent registration
 * Domain join (offline secrets blob) & CIS baselines library
-
----
-
-## License
-
-TBD (suggest **Apache-2.0** for the platform).
-Ensure OS content (RHEL/Windows media) follows vendor licensing terms.
-
----
-
-**You’re ready to build.**
-Start with Sprint 0 (telemetry + healthz + metrics + Helm), then wire DB/NATS/S3, then API renders, then Bootd/Artifacts-GW, then Orchestrator/Blueprints/Inventory, then Agents, Bundler, and Observability.
