@@ -1,0 +1,28 @@
+name: Go CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  format-and-lint:
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: go1.25.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+
+      - name: Verify formatting
+        run: ./build/scripts/format.sh --check
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.61.0
+          args: ./...

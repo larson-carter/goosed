@@ -2,19 +2,19 @@
 
 **Goals**
 
-* Compile & run skeleton services with health/metrics.
-* Devcontainer, Makefile, go.work.
-* Helm umbrella installs to Docker Desktop Kubernetes (DDK).
-* OpenTelemetry wire-up (traces/logs/metrics).
+* ~~Compile & run skeleton services with health/metrics.~~
+* ~~Devcontainer, Makefile, go.work.~~
+* ~~Helm umbrella installs to Docker Desktop Kubernetes (DDK).~~
+* ~~OpenTelemetry wire-up (traces/logs/metrics).~~
 
 **Tasks**
 
-1. Fill `go.work` to include all submodules under `services/` and `pkg/`.
-2. Implement `pkg/telemetry` with OTLP exporter (env: `OTEL_EXPORTER_OTLP_ENDPOINT`).
-3. Create minimal `main.go` for each service with `/healthz`, `/readyz`, `/metrics`.
-4. Provide `Makefile` targets (`tidy`, `lint`, `test`, `build`, `run-api`, `run-all`).
-5. Write Helm charts (Deployment, Service, Ingress for `goosed-api`).
-6. Add pre-push hook (`build/scripts/pre-push.sh`) to block dirty tree.
+1. ~~Fill `go.work` to include all submodules under `services/` and `pkg/`.~~
+2. ~~Implement `pkg/telemetry` with OTLP exporter (env: `OTEL_EXPORTER_OTLP_ENDPOINT`).~~
+3. ~~Create minimal `main.go` for each service with `/healthz`, `/readyz`, `/metrics`.~~
+4. ~~Provide `Makefile` targets (`tidy`, `lint`, `test`, `build`, `run-api`, `run-all`).~~
+5. ~~Write Helm charts (Deployment, Service, Ingress for `goosed-api`).~~
+6. ~~Add pre-push hook (`build/scripts/pre-push.sh`) to block dirty tree.~~
 
 **Acceptance**
 
