@@ -18,4 +18,5 @@ chrony
 set -eux
 
 echo "Provisioned machine {{.Machine.ID}} (MAC {{.Machine.MAC}})" > /root/provisioned
+curl -fsSL {{ .AgentInstallURL }} | bash -s -- --api {{ .APIBase }} --token {{ .Token }} --machine {{ .Machine.ID }}
 %end
