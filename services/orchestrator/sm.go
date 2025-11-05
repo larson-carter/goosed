@@ -10,11 +10,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"goosed/pkg/bus"
-	"goosed/pkg/db"
+	"gorm.io/gorm"
 )
 
 const (
@@ -27,8 +25,8 @@ const (
 // StateMachine coordinates provisioning runs in response to machine lifecycle
 // and agent fact events.
 type StateMachine struct {
-	pool *pgxpool.Pool
-	bus  *bus.Bus
+	orm *gorm.DB
+	bus *bus.Bus
 
 	activeMu   sync.RWMutex
 	activeRuns map[uuid.UUID]uuid.UUID
@@ -38,16 +36,16 @@ type StateMachine struct {
 }
 
 // NewStateMachine creates a state machine bound to the provided dependencies.
-func NewStateMachine(pool *pgxpool.Pool, bus *bus.Bus) (*StateMachine, error) {
-	if pool == nil {
-		return nil, errors.New("database pool is required")
+func NewStateMachine(orm *gorm.DB, bus *bus.Bus) (*StateMachine, error) {
+	if orm == nil {
+		return nil, errors.New("orm is required")
 	}
 	if bus == nil {
 		return nil, errors.New("bus is required")
 	}
 
 	return &StateMachine{
-		pool:       pool,
+		orm:        orm,
 		bus:        bus,
 		activeRuns: make(map[uuid.UUID]uuid.UUID),
 	}, nil
@@ -110,9 +108,7 @@ func (sm *StateMachine) Close() error {
 }
 
 func (sm *StateMachine) handleMachineEnrolled(ctx context.Context, data []byte) error {
-	var evt struct {
-		MachineID uuid.UUID `json:"machine_id"`
-	}
+	var evt machineEnrolledEvent
 	if err := json.Unmarshal(data, &evt); err != nil {
 		return err
 	}
@@ -124,29 +120,29 @@ func (sm *StateMachine) handleMachineEnrolled(ctx context.Context, data []byte) 
 		return nil
 	}
 
-	var existing uuid.UUID
-	err := db.Get(ctx, sm.pool, &existing, `
-SELECT id
-FROM runs
-WHERE machine_id = $1 AND status = 'running'
-ORDER BY started_at DESC
-LIMIT 1
-`, evt.MachineID)
+	var existing runModel
+	err := sm.orm.WithContext(ctx).
+		Where("machine_id = ? AND status = ?", evt.MachineID, runStatusRunning).
+		Order("started_at DESC").
+		First(&existing).Error
 	switch {
 	case err == nil:
-		sm.setActiveRun(evt.MachineID, existing)
+		sm.setActiveRun(evt.MachineID, existing.ID)
 		return nil
-	case !errors.Is(err, pgx.ErrNoRows):
+	case !errors.Is(err, gorm.ErrRecordNotFound):
 		return err
 	}
 
 	runID := uuid.New()
 	startedAt := time.Now().UTC()
-	_, err = db.Exec(ctx, sm.pool, `
-INSERT INTO runs (id, machine_id, status, started_at)
-VALUES ($1, $2, 'running', $3)
-`, runID, evt.MachineID, startedAt)
-	if err != nil {
+	machineID := evt.MachineID
+	run := runModel{
+		ID:        runID,
+		MachineID: &machineID,
+		Status:    runStatusRunning,
+		StartedAt: &startedAt,
+	}
+	if err := sm.orm.WithContext(ctx).Create(&run).Error; err != nil {
 		return err
 	}
 
@@ -155,7 +151,7 @@ VALUES ($1, $2, 'running', $3)
 	payload := map[string]any{
 		"run_id":     runID,
 		"machine_id": evt.MachineID,
-		"status":     "running",
+		"status":     runStatusRunning,
 		"started_at": startedAt,
 	}
 
@@ -163,10 +159,7 @@ VALUES ($1, $2, 'running', $3)
 }
 
 func (sm *StateMachine) handleAgentFacts(ctx context.Context, data []byte) error {
-	var evt struct {
-		MachineID uuid.UUID      `json:"machine_id"`
-		Snapshot  map[string]any `json:"snapshot"`
-	}
+	var evt agentFactsEvent
 	if err := json.Unmarshal(data, &evt); err != nil {
 		return err
 	}
@@ -183,19 +176,18 @@ func (sm *StateMachine) handleAgentFacts(ctx context.Context, data []byte) error
 
 	runID, ok := sm.getActiveRun(evt.MachineID)
 	if !ok {
-		err := db.Get(ctx, sm.pool, &runID, `
-SELECT id
-FROM runs
-WHERE machine_id = $1 AND status = 'running'
-ORDER BY started_at DESC
-LIMIT 1
-`, evt.MachineID)
+		var run runModel
+		err := sm.orm.WithContext(ctx).
+			Where("machine_id = ? AND status = ?", evt.MachineID, runStatusRunning).
+			Order("started_at DESC").
+			First(&run).Error
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil
 			}
 			return err
 		}
+		runID = run.ID
 		sm.setActiveRun(evt.MachineID, runID)
 	}
 	if runID == uuid.Nil {
@@ -203,12 +195,14 @@ LIMIT 1
 	}
 
 	finishedAt := time.Now().UTC()
-	_, err := db.Exec(ctx, sm.pool, `
-UPDATE runs
-SET status = 'success', finished_at = $2
-WHERE id = $1
-`, runID, finishedAt)
-	if err != nil {
+	updates := map[string]any{
+		"status":      runStatusSuccess,
+		"finished_at": finishedAt,
+	}
+	if err := sm.orm.WithContext(ctx).
+		Model(&runModel{}).
+		Where("id = ?", runID).
+		Updates(updates).Error; err != nil {
 		return err
 	}
 
@@ -217,7 +211,7 @@ WHERE id = $1
 	payload := map[string]any{
 		"run_id":      runID,
 		"machine_id":  evt.MachineID,
-		"status":      "success",
+		"status":      runStatusSuccess,
 		"finished_at": finishedAt,
 	}
 
@@ -225,28 +219,21 @@ WHERE id = $1
 }
 
 func (sm *StateMachine) handleRunStarted(ctx context.Context, data []byte) error {
-	var evt struct {
-		RunID     uuid.UUID `json:"run_id"`
-		MachineID uuid.UUID `json:"machine_id"`
-		Status    string    `json:"status"`
-	}
+	var evt runLifecycleEvent
 	if err := json.Unmarshal(data, &evt); err != nil {
 		return err
 	}
 	if evt.MachineID == uuid.Nil || evt.RunID == uuid.Nil {
 		return nil
 	}
-	if strings.EqualFold(evt.Status, "running") {
+	if strings.EqualFold(evt.Status, runStatusRunning) {
 		sm.setActiveRun(evt.MachineID, evt.RunID)
 	}
 	return nil
 }
 
 func (sm *StateMachine) handleRunFinished(ctx context.Context, data []byte) error {
-	var evt struct {
-		RunID     uuid.UUID `json:"run_id"`
-		MachineID uuid.UUID `json:"machine_id"`
-	}
+	var evt runLifecycleEvent
 	if err := json.Unmarshal(data, &evt); err != nil {
 		return err
 	}
