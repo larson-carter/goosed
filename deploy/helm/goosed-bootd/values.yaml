@@ -1,6 +1,6 @@
 image:
   repository: goosed/bootd
-  tag: latest
+  tag: dev
   pullPolicy: IfNotPresent
 
 service:
