@@ -69,3 +69,9 @@ goosed-inventory:
 goosed-orchestrator:
   otel:
     exporterEndpoint: http://goosed-observability-otel-collector:4318
+
+# Optional PXE helpers. Disabled by default; enable when running on bare metal networks.
+goosed-pxe-stack:
+  enabled: false
+  dhcp:
+    enabled: false
