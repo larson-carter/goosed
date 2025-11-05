@@ -37,7 +37,9 @@ func (b *Bus) Close() {
 	if b == nil {
 		return
 	}
-	b.conn.Drain()
+	if err := b.conn.Drain(); err != nil {
+		b.conn.Close()
+	}
 }
 
 // Publish encodes v as JSON and publishes it to the given subject.

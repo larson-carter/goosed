@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"time"
 
@@ -12,15 +11,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+
+	_ "goosed/pkg/db/migrations"
 )
 
 const (
 	// DefaultTimeout is used when executing queries to avoid leaking resources on hung calls.
 	DefaultTimeout = 5 * time.Second
 )
-
-//go:embed migrations/*.sql
-var migrations embed.FS
 
 // Open creates a new pgx connection pool using the provided DSN.
 func Open(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
@@ -51,7 +49,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 		return errors.New("nil pool provided")
 	}
 
-	goose.SetBaseFS(migrations)
 	if err := goose.SetDialect("postgres"); err != nil {
 		return err
 	}

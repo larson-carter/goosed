@@ -75,7 +75,6 @@ func NewClientFromEnv() (*Client, error) {
 		awsconfig.WithRegion(region),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 		awsconfig.WithHTTPClient(&http.Client{Timeout: 30 * time.Second}),
-		awsconfig.WithEndpointResolverWithOptions(endpointResolver(endpoint, region)),
 	)
 	if err != nil {
 		return nil, err
@@ -83,24 +82,13 @@ func NewClientFromEnv() (*Client, error) {
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.UsePathStyle = forcePathStyle
+		o.BaseEndpoint = aws.String(endpoint)
 	})
 
 	return &Client{
 		api:     client,
 		presign: s3.NewPresignClient(client),
 	}, nil
-}
-
-func endpointResolver(endpoint, region string) aws.EndpointResolverWithOptionsFunc {
-	return func(service, regionHint string, options ...interface{}) (aws.Endpoint, error) {
-		if service == s3.ServiceID {
-			return aws.Endpoint{
-				URL:           endpoint,
-				SigningRegion: region,
-			}, nil
-		}
-		return aws.Endpoint{}, fmt.Errorf("unknown service %s", service)
-	}
 }
 
 // PutObject uploads data to the given bucket/key with checksum metadata.

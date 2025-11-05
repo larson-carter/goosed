@@ -13,24 +13,33 @@
 
 ## Table of Contents
 
-1. [Architecture](#architecture)
-2. [Microservices](#microservices)
-3. [Tech Stack](#tech-stack)
-4. [Repository Layout](#repository-layout)
-5. [Getting Started (Dev on Docker Desktop K8s)](#getting-started-dev-on-docker-desktop-k8s)
-6. [Configuration & Environment](#configuration--environment)
-7. [Deploying the Stack](#deploying-the-stack)
-8. [PXE Boot: Dev vs Lab](#pxe-boot-dev-vs-lab)
-9. [RHEL & Windows Provisioning Flows](#rhel--windows-provisioning-flows)
-10. [Air-Gap Bundles (`goosectl`)](#air-gap-bundles-goosectl)
-11. [Observability](#observability)
-12. [Security](#security)
-13. [API Overview](#api-overview)
-14. [GitOps (`infra/`) Layout](#gitops-infra-layout)
-15. [Development Workflow](#development-workflow)
-16. [Makefile Targets](#makefile-targets)
-17. [Troubleshooting](#troubleshooting)
-18. [Roadmap](#roadmap)
+1. [How to Use This README](#how-to-use-this-readme)
+2. [Architecture](#architecture)
+3. [Microservices](#microservices)
+4. [Tech Stack](#tech-stack)
+5. [Repository Layout](#repository-layout)
+6. [Getting Started (Dev on Docker Desktop K8s)](#getting-started-dev-on-docker-desktop-k8s)
+7. [Configuration & Environment](#configuration--environment)
+8. [Deploying the Stack](#deploying-the-stack)
+9. [PXE Boot: Dev vs Lab](#pxe-boot-dev-vs-lab)
+10. [RHEL & Windows Provisioning Flows](#rhel--windows-provisioning-flows)
+11. [Air-Gap Bundles (`goosectl`)](#air-gap-bundles-goosectl)
+12. [Observability](#observability)
+13. [Security](#security)
+14. [API Overview](#api-overview)
+15. [GitOps (`infra/`) Layout](#gitops-infra-layout)
+16. [Development Workflow](#development-workflow)
+17. [Makefile Targets](#makefile-targets)
+18. [Troubleshooting](#troubleshooting)
+19. [Roadmap](#roadmap)
+
+## How to Use This README
+
+1. **Start with the TL;DR** above for the high-level pitch, then jump back here when you need specifics.
+2. **Use the Table of Contents** to hop directly to the area you care about—each major activity (dev setup, deployments, PXE flows) has its own section.
+3. **Follow callouts** such as _Prereqs_, numbered walkthroughs, and code fences to complete tasks end-to-end without hunting elsewhere.
+4. **Cross-reference sprint notes** in `SPRINT-PLAN.md` when you need historical context or validation checklists for recently completed work.
+5. **Search-friendly tips**: `git grep`/`rg` the headings if you are in an editor, or view this README in VS Code’s outline for quick navigation.
 
 ## Architecture
 
@@ -62,8 +71,8 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 
 ## Tech Stack
 
-* **Language**: Go 1.22+
-* **DB**: Postgres 17 (JSONB) via `pgxpool` + `pressly/goose`
+* **Language**: Go 1.25+
+* **DB**: Postgres 17 (JSONB) via `pgxpool` + `gorm` migrations orchestrated by `pressly/goose`
 * **Events**: NATS JetStream
 * **Artifacts**: **SeaweedFS S3** (dev & prod)
 * **Tracing/Logs/Metrics**: OpenTelemetry → Tempo/Loki/Prometheus → Grafana
@@ -104,7 +113,7 @@ goosed/
 **Prereqs**
 
 * Docker Desktop with Kubernetes enabled
-* Helm 3, kubectl, Go 1.22+
+* Helm 3, kubectl, Go 1.25+
 * (Optional) VS Code Dev Containers
 
 **1) Clone & open**
