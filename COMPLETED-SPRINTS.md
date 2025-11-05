@@ -223,3 +223,40 @@ C) Orchestrator
 
 Return complete code for these files with error handling and logging.
 ```
+# Sprint 5 — RHEL Agent MVP (Days 23–27)
+
+**Goals**
+
+* RHEL `%post` installer + systemd agent that posts facts & completion.
+* Sample Kickstart uses agent install snippet.
+
+**Tasks**
+
+1. `services/agents/rhel/postinstall.sh` to drop config and install unit.
+2. `services/agents/rhel/service.go` posts basics every 30s; on first run, sets `postinstall_done=true`.
+3. Add `pkg/render/templates/kickstart.tmpl` snippet to curl/install agent.
+
+**Acceptance**
+
+* In a VM, install via Kickstart URL → agent registers; facts visible; run finishes.
+
+**Codex Prompt:**
+
+```
+Implement RHEL agent:
+
+1) services/agents/rhel/postinstall.sh:
+- Read env API_URL and TOKEN from kernel args or files.
+- Create /etc/goosed/agent.conf JSON with {api, token, machine_id}
+- Install systemd unit /etc/systemd/system/goosed-agent.service that runs /usr/local/bin/goosed-agent-rhel
+- Enable & start.
+
+2) services/agents/rhel/service.go:
+- Load config; on start, POST /v1/agents/facts snapshot {kernel, selinux, packages: ["placeholder"], postinstall_done:true if first boot}
+- Loop every 30s to send minimal heartbeat facts.
+
+3) pkg/render/templates/kickstart.tmpl: add in %post:
+curl -fsSL {{ .AgentInstallURL }} | bash -s -- --api {{ .APIBase }} --token {{ .Token }} --machine {{ .MachineID }}
+
+Return file contents.
+```
