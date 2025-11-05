@@ -21,6 +21,14 @@
 * `helm upgrade --install goose ...` runs pods for api/bootd/orchestrator/blueprints/inventory/artifacts-gw.
 * `curl` each service `/healthz` → 200; Prom/OTel endpoints OK.
 
+**Validation commands**
+
+* `./build/scripts/format.sh --check`
+* `make tidy`
+* `make lint`
+* `make test`
+* `helm lint deploy/helm/goosed-api`
+
 **Codex Prompt (paste):**
 
 ```
