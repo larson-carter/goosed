@@ -1,0 +1,29 @@
+image:
+  repository: goosed/artifacts-gw
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+otel:
+  exporterEndpoint: http://otel-collector:4318
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Range $http_range;
+      proxy_set_header If-Range $http_if_range;
+  host: artifacts.goose.local
+  tls: []
+
+resources: {}
+
+affinity: {}
+
+tolerations: []
+
+nodeSelector: {}

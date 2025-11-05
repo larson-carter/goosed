@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	gos3 "goosed/pkg/s3"
 	"goosed/pkg/telemetry"
+	"goosed/services/artifacts-gw"
 )
 
 func main() {
@@ -41,10 +44,29 @@ func run(serviceName string) error {
 		}
 	}()
 
+	s3Client, err := gos3.NewClientFromEnv()
+	if err != nil {
+		return fmt.Errorf("init s3 client: %w", err)
+	}
+
+	bucket := strings.TrimSpace(os.Getenv("S3_BUCKET"))
+	if bucket == "" {
+		return errors.New("S3_BUCKET is required")
+	}
+
+	presignServer, err := artifactsgw.NewServer(bucket, s3Client)
+	if err != nil {
+		return fmt.Errorf("init presign server: %w", err)
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/readyz", readyHandler)
 	mux.Handle("/metrics", promhttp.Handler())
+
+	if err := presignServer.RegisterHandlers(mux); err != nil {
+		return fmt.Errorf("register presign handlers: %w", err)
+	}
 
 	server := &http.Server{
 		Addr:    ":8080",

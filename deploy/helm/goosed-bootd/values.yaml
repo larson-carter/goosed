@@ -1,0 +1,26 @@
+image:
+  repository: goosed/bootd
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+otel:
+  exporterEndpoint: http://otel-collector:4318
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  host: boot.goose.local
+  tls: []
+
+resources: {}
+
+affinity: {}
+
+tolerations: []
+
+nodeSelector: {}

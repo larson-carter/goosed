@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"goosed/pkg/telemetry"
+	"goosed/services/bootd"
 )
 
 func main() {
@@ -45,6 +46,10 @@ func run(serviceName string) error {
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/readyz", readyHandler)
 	mux.Handle("/metrics", promhttp.Handler())
+
+	if err := bootd.RegisterHandlers(mux); err != nil {
+		return fmt.Errorf("register bootd handlers: %w", err)
+	}
 
 	server := &http.Server{
 		Addr:    ":8080",
