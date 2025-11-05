@@ -1,0 +1,20 @@
+apiVersion: goosed.io/v1alpha1
+kind: Workflow
+metadata:
+  name: rocky-default
+spec:
+  description: Default Rocky Linux provisioning flow matching the RHEL baseline.
+  steps:
+    - name: fetch-artifacts
+      action: download-artifacts
+      with:
+        kernel: artifacts/rocky/9/vmlinuz
+        initrd: artifacts/rocky/9/initrd.img
+    - name: render-kickstart
+      action: render-template
+      with:
+        template: kickstart.tmpl
+    - name: wait-for-agent
+      action: await-agent
+      with:
+        timeout: 15m

@@ -1,0 +1,41 @@
+apiVersion: goosed.io/v1alpha1
+kind: MachineProfile
+metadata:
+  name: lab-a-rack01-node03
+  labels:
+    site: lab-a
+    rack: rack-01
+spec:
+  machine:
+    mac: "00:11:22:CC:DD:EE"
+    serial: LABA-RACK01-03
+    assetTag: LAB-A-R01-N03
+  blueprint: rocky/9/base
+  workflow: rocky-default
+  profile:
+    hostname: laba-r01-n03.goose.local
+    packages:
+      - vim
+      - git
+      - epel-release
+    install:
+      method: url
+      url: http://mirror.lab-a.local/rocky/9/BaseOS/x86_64/os/
+    repos:
+      baseos: http://mirror.lab-a.local/rocky/9/BaseOS
+      appstream: http://mirror.lab-a.local/rocky/9/AppStream
+      epel: http://mirror.lab-a.local/epel/9/Everything/x86_64
+    network:
+      interface: eno1
+    kickstart:
+      timezone: America/New_York
+      lang: en_US.UTF-8
+      keyboard: us
+      rootPasswordHash: "$6$rounds=4096$goosedlab$0cY9wj7v2uZB7Q2yEn8g9orL49HRvPxvXB1EZVZhG7T0ioigj8O4d2o2i0L1.BFQJ6xXzB/8C2Tkq5VdJtA1p."
+      ntpServers:
+        - time1.lab-a.local
+      users:
+        - name: ops
+          groups: wheel
+          sshAuthorizedKeys:
+            - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOpsLabKeyForDocsOnly lab-a-ops"

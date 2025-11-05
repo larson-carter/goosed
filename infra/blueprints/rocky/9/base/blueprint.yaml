@@ -1,0 +1,37 @@
+apiVersion: goosed.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: rocky-9-base
+  labels:
+    goosed.io/os-family: rocky
+    goosed.io/os-version: "9"
+spec:
+  description: |
+    Baseline Rocky Linux 9 build that mirrors the existing RHEL flow but uses
+    community bits for lab validation and developer VMs. Includes minimal
+    packages plus the goosed RHEL agent so we can reuse the same post-install
+    automation.
+  os:
+    family: rocky
+    version: "9.4"
+    architecture: x86_64
+  artifacts:
+    kernel: artifacts/rocky/9/vmlinuz
+    initrd: artifacts/rocky/9/initrd.img
+    iso: artifacts/rocky/9/Rocky-9.4-x86_64-minimal.iso
+  packages:
+    groups:
+      - "@^minimal"
+    extra:
+      - chrony
+  kickstart:
+    lang: en_US.UTF-8
+    keyboard: us
+    timezone: UTC
+    rootPasswordHash: "$6$rounds=4096$goosedlab$0cY9wj7v2uZB7Q2yEn8g9orL49HRvPxvXB1EZVZhG7T0ioigj8O4d2o2i0L1.BFQJ6xXzB/8C2Tkq5VdJtA1p."
+    ntpServers:
+      - time1.lab-a.local
+      - time2.lab-a.local
+  repos:
+    baseos: http://mirror.lab-a.local/rocky/9/BaseOS
+    appstream: http://mirror.lab-a.local/rocky/9/AppStream
