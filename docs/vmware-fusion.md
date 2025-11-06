@@ -1,16 +1,12 @@
 # PXE Booting VMware Fusion Guests
 
-Use the optional `pxe-stack` helpers to bring DHCP, TFTP, and a PXE-friendly HTTP endpoint into your cluster so VMware Fusion VMs can boot directly from goose'd.
+The `pxe-stack` helpers ship with the default deployment, bringing DHCP, TFTP, and a PXE-friendly HTTP endpoint into your cluster so VMware Fusion VMs can boot directly from goose'd.
 
-1. **Enable the stack in Kubernetes**
-   * This guide assumes you've already deployed the platform via [getting-started.md](getting-started.md); the command below upgrades that existing release to enable PXE support.
-   * Toggle the Helm values to deploy the helpers alongside the rest of the platform:
+1. **Confirm the stack in Kubernetes**
+   * Deploy the platform via [getting-started.md](getting-started.md) to install the PXE helpers alongside the core services, then verify the pod is running:
 
      ```bash
-     helm upgrade --install goose ./deploy/helm/umbrella \
-       --namespace goose \
-       --create-namespace \
-       --set pxeStack.enabled=true
+     kubectl -n goose get pods -l app.kubernetes.io/name=goosed-pxe-stack
      ```
 
    * The chart publishes three ports: DHCP (`67/udp`), TFTP (`69/udp`), and HTTP (`8080/tcp`). Expose them with a `LoadBalancer` or `NodePort` service and ensure the PXE VLAN can reach the selected nodes.

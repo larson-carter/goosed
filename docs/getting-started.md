@@ -74,7 +74,7 @@ Make sure the following tools and services are available before you begin:
      --set s3.port=8333
    ```
 
-6. **Deploy goose'd**
+6. **Deploy goose'd (PXE helpers included)**
 
    ```bash
    helm dependency build deploy/helm/umbrella
@@ -83,7 +83,8 @@ Make sure the following tools and services are available before you begin:
      -f deploy/helm/umbrella/values-dev.yaml
    ```
 
-7. **Verify pods** – everything should settle into `Running`/`Completed` within a couple of minutes.
+7. **Verify pods** – everything should settle into `Running`/`Completed` within a couple of minutes. The `goosed-pxe-stack`
+   deployment runs alongside the core services so DHCP/TFTP/HTTP boot paths are ready to exercise.
 
    ```bash
    kubectl -n goose get pods

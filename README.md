@@ -54,7 +54,7 @@ Everything is **headless** (API + CLI). Add the UI later without blocking provis
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
 | **api**                  | REST for machines, runs, artifacts, render endpoints (iPXE/Kickstart/Unattend), audit; issues one-time boot tokens | Postgres, NATS, S3          |
 | **bootd**                | PXE edge for **iPXE/HTTPBoot**; serves branding; chains to API render endpoints                                    | API, S3, NATS               |
-| **pxe-stack**            | Optional DHCP/TFTP helpers to hand out iPXE binaries and bridge into the API
+| **pxe-stack**            | DHCP/TFTP helpers (deployed by default) to hand out iPXE binaries and bridge into the API
                 | Host network, branding data  |
 | **blueprints**           | Pulls/reads `infra/` blueprints & workflows, renders templates, emits update events                                | Git, API, NATS              |
 | **inventory**            | Consumes agent facts, stores snapshots, computes diffs                                                             | API, NATS                   |
