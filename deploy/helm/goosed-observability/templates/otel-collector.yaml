@@ -22,6 +22,8 @@ spec:
           args:
             - "--config=/etc/otel-collector/collector.yaml"
           ports:
+            - name: otlp-grpc
+              containerPort: 4317
             - name: otlp-http
               containerPort: 4318
             - name: metrics
@@ -57,9 +59,30 @@ spec:
     app.kubernetes.io/component: otel-collector
     {{- include "goosed-observability.selectorLabels" . | nindent 4 }}
   ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
     - name: otlp-http
       port: 4318
       targetPort: otlp-http
     - name: metrics
       port: 9464
       targetPort: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/component: otel-collector
+    {{- include "goosed-observability.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http

@@ -107,6 +107,13 @@ func Load() (Config, error) {
 	cfg.HTTP.Port = getEnvInt("PXE_HTTP_PORT", 8080)
 	cfg.HTTP.APIEndpoint = getEnv("PXE_HTTP_API_ENDPOINT", "http://api.goose.local")
 	cfg.HTTP.BrandingFS = os.Getenv("PXE_HTTP_BRANDING_FS")
+	if fallbacks := os.Getenv("PXE_HTTP_FALLBACK_PORTS"); fallbacks != "" {
+		ports, err := parsePortList(fallbacks)
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid PXE_HTTP_FALLBACK_PORTS: %w", err)
+		}
+		cfg.HTTP.FallbackPorts = ports
+	}
 
 	return cfg, nil
 }
@@ -161,4 +168,32 @@ func getEnvInt(key string, def int) int {
 		}
 	}
 	return def
+}
+
+func parsePortList(value string) ([]int, error) {
+	parts := strings.Split(value, ",")
+	ports := make([]int, 0, len(parts))
+	seen := make(map[int]struct{}, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		port, err := strconv.Atoi(trimmed)
+		if err != nil {
+			return nil, fmt.Errorf("%q is not a valid integer", trimmed)
+		}
+		if port <= 0 || port > 65535 {
+			return nil, fmt.Errorf("port %d is outside the valid range 1-65535", port)
+		}
+		if _, exists := seen[port]; exists {
+			continue
+		}
+		seen[port] = struct{}{}
+		ports = append(ports, port)
+	}
+	if len(ports) == 0 {
+		return nil, nil
+	}
+	return ports, nil
 }

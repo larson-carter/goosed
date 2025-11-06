@@ -47,19 +47,30 @@ tftp:
 http:
   enabled: true
   port: 8080
+  # Additional ports to try when binding on the host network if the preferred port is unavailable.
+  fallbackPorts:
+    - 8081
+    - 8082
+    - 8083
   apiEndpoint: http://goosed-api:8080
   brandingPath: ""
 
 extraEnv: []
 
+otel:
+  exporterEndpoint: http://otel-collector:4318
+
 podSecurityContext:
-  runAsUser: 65532
-  runAsNonRoot: true
-  fsGroup: 65532
+  runAsUser: 0
+  runAsNonRoot: false
+  fsGroup: 0
 
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
     add:
       - NET_ADMIN
-  runAsNonRoot: true
+      - NET_BIND_SERVICE
+      - NET_RAW
+  runAsNonRoot: false
+  runAsUser: 0
