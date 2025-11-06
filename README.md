@@ -109,7 +109,7 @@ goosed/
 * [Getting Started (Prereqs + Quickstart)](docs/getting-started.md)
 * [Deploying goose'd in Kubernetes](docs/deploying.md)
 * [PXE Boot Strategies: Development vs Lab](docs/pxe-environments.md)
-* [PXE Booting VMware Fusion Guests](docs/vmware-fusion.md)
+* [PXE Booting macOS Hypervisor Guests](docs/macos-hypervisors.md)
 * [RHEL/Rocky and Windows Provisioning Flows](docs/provisioning-flows.md)
 * [Building and Importing Air-Gap Bundles](docs/air-gap-bundles.md)
 * [Uploading Rocky Linux ISOs to SeaweedFS](docs/seaweedfs-iso-upload.md)

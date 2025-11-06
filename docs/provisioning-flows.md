@@ -1,6 +1,6 @@
 # RHEL/Rocky and Windows Provisioning Flows
 
-Use these notes alongside the [VMware Fusion walkthrough](vmware-fusion.md) or your lab deployment to understand what each stage of provisioning does.
+Use these notes alongside the [macOS hypervisor walkthrough](macos-hypervisors.md) or your lab deployment to understand what each stage of provisioning does.
 
 ## RHEL & Rocky (Kickstart)
 
