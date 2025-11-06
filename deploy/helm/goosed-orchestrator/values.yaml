@@ -1,6 +1,6 @@
 image:
   repository: goosed/orchestrator
-  tag: latest
+  tag: dev
   pullPolicy: IfNotPresent
 
 service:

@@ -11,7 +11,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/service ./services/bootd/cmd/bootd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/service ./services/pxe-stack/cmd/pxe
 
 FROM gcr.io/distroless/base-debian12:nonroot
 COPY --from=builder /out/service /app/service

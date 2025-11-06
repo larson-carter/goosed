@@ -26,3 +26,7 @@ dependencies:
   - name: goosed-observability
     version: 0.1.0
     repository: file://../goosed-observability
+  - name: goosed-pxe-stack
+    version: 0.1.0
+    repository: file://../goosed-pxe-stack
+    condition: goosed-pxe-stack.enabled

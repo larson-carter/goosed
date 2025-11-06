@@ -1,0 +1,17 @@
+{{- if and .Values.http.enabled (not .Values.hostNetwork) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "goosed-pxe-stack.fullname" . }}
+  labels:
+    {{- include "goosed-pxe-stack.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "goosed-pxe-stack.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.http.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

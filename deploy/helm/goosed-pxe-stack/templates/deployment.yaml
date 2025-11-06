@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "goosed-pxe-stack.fullname" . }}
+  labels:
+    {{- include "goosed-pxe-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "goosed-pxe-stack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "goosed-pxe-stack.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "goosed-pxe-stack.serviceAccountName" . }}
+      hostNetwork: {{ .Values.hostNetwork }}
+      dnsPolicy: {{ ternary "ClusterFirstWithHostNet" "ClusterFirst" .Values.hostNetwork }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: pxe-stack
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          env:
+            - name: PXE_ENABLE_DHCP
+              value: {{ .Values.dhcp.enabled | quote }}
+            - name: PXE_DHCP_INTERFACE
+              value: {{ .Values.dhcp.interface | quote }}
+            - name: PXE_DHCP_RANGE_START
+              value: {{ .Values.dhcp.rangeStart | quote }}
+            - name: PXE_DHCP_RANGE_END
+              value: {{ .Values.dhcp.rangeEnd | quote }}
+            - name: PXE_DHCP_SUBNET_MASK
+              value: {{ .Values.dhcp.subnetMask | quote }}
+            - name: PXE_DHCP_ROUTER
+              value: {{ .Values.dhcp.router | quote }}
+            - name: PXE_DHCP_DNS
+              value: {{ .Values.dhcp.dns | quote }}
+            - name: PXE_DHCP_LEASE_SECONDS
+              value: {{ .Values.dhcp.leaseSeconds | quote }}
+            - name: PXE_DHCP_SERVER_IP
+              value: {{ .Values.dhcp.serverIP | quote }}
+            - name: PXE_DHCP_NEXT_SERVER
+              value: {{ .Values.dhcp.nextServer | quote }}
+            - name: PXE_DHCP_BOOT_FILE
+              value: {{ .Values.dhcp.bootFile | quote }}
+            - name: PXE_ENABLE_TFTP
+              value: {{ .Values.tftp.enabled | quote }}
+            - name: PXE_TFTP_ADDRESS
+              value: {{ .Values.tftp.address | quote }}
+            - name: PXE_TFTP_ROOT
+              value: {{ .Values.tftp.root | quote }}
+            - name: PXE_TFTP_TIMEOUT
+              value: {{ .Values.tftp.timeoutSeconds | quote }}
+            - name: PXE_ENABLE_HTTP
+              value: {{ .Values.http.enabled | quote }}
+            - name: PXE_HTTP_PORT
+              value: {{ .Values.http.port | quote }}
+            - name: PXE_HTTP_API_ENDPOINT
+              value: {{ .Values.http.apiEndpoint | quote }}
+            {{- if .Values.http.brandingPath }}
+            - name: PXE_HTTP_BRANDING_FS
+              value: {{ .Values.http.brandingPath | quote }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.http.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: tftp-data
+              mountPath: {{ .Values.tftp.root }}
+            {{- with .Values.tftp.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: tftp-data
+          emptyDir: {}
+        {{- with .Values.tftp.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

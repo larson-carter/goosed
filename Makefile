@@ -1,5 +1,5 @@
 MODULES := $(shell find . -name go.mod -not -path "./vendor/*")
-SERVICES := api bootd orchestrator blueprints inventory artifacts-gw
+SERVICES := api bootd orchestrator blueprints inventory artifacts-gw pxe-stack
 
 .PHONY: tidy lint test build run-api run-all
 
@@ -25,7 +25,7 @@ test:
 build:
 	@for svc in $(SERVICES); do \
 		echo "==> services/$$svc"; \
-		docker build -f services/$$svc/Dockerfile -t goosed/$$svc:dev services/$$svc; \
+		docker build -f services/$$svc/Dockerfile -t goosed/$$svc:dev .; \
 	done
 
 run-api:

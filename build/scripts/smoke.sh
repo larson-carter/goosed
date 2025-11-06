@@ -2,6 +2,7 @@
 set -euo pipefail
 
 NAMESPACE=${NAMESPACE:-goose}
+HELM_RELEASE=${HELM_RELEASE:-goose}
 KUBECTL_CONTEXT=${KUBECTL_CONTEXT:-}
 TIMEOUT=${TIMEOUT:-30}
 
@@ -89,7 +90,12 @@ main() {
 
   for entry in "${SERVICES[@]}"; do
     IFS=":" read -r svc remote_port local_port <<<"$entry"
-    port_forward_and_check "$svc" "$remote_port" "$local_port"
+    if [[ -n "$HELM_RELEASE" ]]; then
+      svc_name="${HELM_RELEASE}-${svc}"
+    else
+      svc_name="$svc"
+    fi
+    port_forward_and_check "$svc_name" "$remote_port" "$local_port"
   done
 
   echo "[smoke] all services responded with HTTP 200"

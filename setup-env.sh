@@ -49,18 +49,41 @@ wait_for_postgres() {
   return 1
 }
 
-wait_for_http() {
-  local name="$1"
-  local url="$2"
-  echo "[setup-env] Waiting for ${name} (${url})..."
+wait_for_nats_endpoint() {
+  local description="$1"
+  local path="$2"
+  local display_url="http://localhost:8222${path}"
+  local container_url="http://127.0.0.1:8222${path}"
+
+  echo "[setup-env] Waiting for ${description} (${display_url})..."
   for _ in $(seq 1 60); do
-    if curl -sf "$url" >/dev/null 2>&1; then
-      echo "[setup-env] ${name} is reachable."
+    if docker_compose exec -T nats wget -qO- "$container_url" >/dev/null 2>&1; then
+      echo "[setup-env] ${description} is reachable."
       return 0
     fi
     sleep 2
   done
-  echo "[setup-env] Timed out waiting for ${name} at ${url}" >&2
+
+  echo "[setup-env] Timed out waiting for ${description} at ${display_url}" >&2
+  return 1
+}
+
+wait_for_seaweed_endpoint() {
+  local description="$1"
+  local path="$2"
+  local display_url="http://localhost:9333${path}"
+  local container_url="http://127.0.0.1:9333${path}"
+
+  echo "[setup-env] Waiting for ${description} (${display_url})..."
+  for _ in $(seq 1 60); do
+    if docker_compose exec -T seaweedfs wget -qO- "$container_url" >/dev/null 2>&1; then
+      echo "[setup-env] ${description} is reachable."
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "[setup-env] Timed out waiting for ${description} at ${display_url}" >&2
   return 1
 }
 
@@ -85,7 +108,6 @@ EOT
 
 main() {
   require_cmd docker
-  require_cmd curl
   require_cmd go
 
   case "$MODE" in
@@ -107,8 +129,9 @@ main() {
     docker_compose up -d
 
     wait_for_postgres
-    wait_for_http "NATS" "http://localhost:8222/healthz?js-enabled=true"
-    wait_for_http "SeaweedFS" "http://localhost:9333/cluster/status"
+    wait_for_nats_endpoint "NATS" "/healthz"
+    wait_for_nats_endpoint "NATS JetStream" "/jsz"
+    wait_for_seaweed_endpoint "SeaweedFS" "/cluster/status"
   fi
 
   bootstrap_env_file
