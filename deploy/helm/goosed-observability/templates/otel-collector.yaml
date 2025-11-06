@@ -28,17 +28,19 @@ spec:
               containerPort: 4318
             - name: metrics
               containerPort: 9464
+            - name: health
+              containerPort: 13133
           volumeMounts:
             - name: otel-config
               mountPath: /etc/otel-collector
           readinessProbe:
             httpGet:
               path: /healthz
-              port: metrics
+              port: health
           livenessProbe:
             httpGet:
               path: /healthz
-              port: metrics
+              port: health
 {{- with .Values.otelCollector.resources }}
           resources:
 {{ toYaml . | nindent 12 }}
