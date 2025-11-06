@@ -70,8 +70,8 @@ goosed-orchestrator:
   otel:
     exporterEndpoint: http://goosed-observability-otel-collector:4318
 
-# Optional PXE helpers. Disabled by default; enable when running on bare metal networks.
+# PXE helpers ship enabled so the development release exercises the full boot path.
 goosed-pxe-stack:
-  enabled: false
+  enabled: true
   dhcp:
-    enabled: false
+    enabled: true
