@@ -3,10 +3,11 @@
 Use the optional `pxe-stack` helpers to bring DHCP, TFTP, and a PXE-friendly HTTP endpoint into your cluster so VMware Fusion VMs can boot directly from goose'd.
 
 1. **Enable the stack in Kubernetes**
+   * This guide assumes you've already deployed the platform via [getting-started.md](getting-started.md); the command below upgrades that existing release to enable PXE support.
    * Toggle the Helm values to deploy the helpers alongside the rest of the platform:
 
      ```bash
-     helm upgrade --install goosed-umbrella ./deploy/helm/umbrella \
+     helm upgrade --install goose ./deploy/helm/umbrella \
        --namespace goose \
        --create-namespace \
        --set pxeStack.enabled=true
