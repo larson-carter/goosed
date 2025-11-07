@@ -225,7 +225,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{service!=\"\", service=~\"${service:regex}\"}",
+          "expr": "{service=~\"${service:regex}\"}",
           "refId": "A",
           "queryType": "range"
         }
