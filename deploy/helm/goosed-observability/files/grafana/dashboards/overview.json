@@ -215,7 +215,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false,
         "showCommonLabels": true,
-        "showLabels": false,
+        "showLabels": true,
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
@@ -225,8 +225,9 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{service=~\"$service\"}",
-          "refId": "A"
+          "expr": "{service=~\"${service:regex}\"}",
+          "refId": "A",
+          "queryType": "range"
         }
       ],
       "title": "Logs",
@@ -248,8 +249,11 @@
         "dedup": false,
         "limit": 20,
         "maxDuration": "",
-        "query": "",
-        "search": "",
+        "query": "{ service.name != \"\", service.name =~ \"${service:regex}\" }",
+        "search": {
+          "query": "",
+          "tags": []
+        },
         "showSearch": true
       },
       "targets": [
@@ -258,7 +262,7 @@
             "type": "tempo",
             "uid": "tempo"
           },
-          "query": "{ service.name = \"$service\" }",
+          "query": "{ service.name != \"\", service.name =~ \"${service:regex}\" }",
           "queryType": "traceqlSearch",
           "refId": "A"
         }
@@ -280,7 +284,7 @@
         "current": {
           "selected": false,
           "text": "All",
-          "value": ".*"
+          "value": ".+"
         },
         "datasource": {
           "type": "prometheus",
@@ -297,7 +301,8 @@
         "refresh": 2,
         "regex": "",
         "sort": 1,
-        "type": "query"
+        "type": "query",
+        "allValue": ".+"
       }
     ]
   },

@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: promtail
+subjects:
+  - kind: ServiceAccount
+    name: promtail
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 3101
+
+    clients:
+      - url: http://{{ include "goosed-observability.fullname" . }}-loki:3100/loki/api/v1/push
+
+    positions:
+      filename: /run/promtail/positions.yaml
+
+    scrape_configs:
+      # Single job: discover pods, jump to Docker's JSON log via container_id.
+      - job_name: kubernetes-docker-json
+        kubernetes_sd_configs:
+          - role: pod
+
+        pipeline_stages:
+          - docker: {}     # parse outer Docker/CRI JSON -> puts 'log' into body
+          - json:
+              expressions:
+                ts: ts
+                level: level
+                service: service
+                msg: msg
+                trace_id: trace_id
+          - labels:
+              level:
+              service:
+              traceID:
+          - output:
+              source: msg
+
+        relabel_configs:
+          # add standard k8s labels
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+
+          # Build the Docker JSON path from container_id (docker://<id> or containerd://<id>)
+          - source_labels: [__meta_kubernetes_pod_container_id]
+            regex: '.*://([a-f0-9]+)'
+            target_label: __tmp_container_id
+          - action: replace
+            replacement: /var/lib/docker/containers/$__tmp_container_id/$__tmp_container_id-json.log
+            target_label: __path__
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: promtail
+    {{- include "goosed-observability.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  template:
+    metadata:
+      labels:
+        app: promtail
+        {{- include "goosed-observability.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: promtail
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      containers:
+        - name: promtail
+          image: grafana/promtail:2.9.0
+          args: ["-config.file=/etc/promtail/promtail.yaml", "-log.level=info"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/promtail
+            - name: docker
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            - name: run-promtail
+              mountPath: /run/promtail
+      volumes:
+        - name: config
+          configMap: { name: promtail-config }
+        - name: docker
+          hostPath: { path: /var/lib/docker/containers }
+        - name: run-promtail
+          emptyDir: {}
