@@ -108,6 +108,7 @@ goosed/
 
 * [Getting Started (Prereqs + Quickstart)](docs/getting-started.md)
 * [Deploying goose'd in Kubernetes](docs/deploying.md)
+* [Observability with Grafana](docs/observability.md)
 * [PXE Boot Strategies: Development vs Lab](docs/pxe-environments.md)
 * [PXE Booting VMware Fusion Guests](docs/vmware-fusion.md)
 * [RHEL/Rocky and Windows Provisioning Flows](docs/provisioning-flows.md)

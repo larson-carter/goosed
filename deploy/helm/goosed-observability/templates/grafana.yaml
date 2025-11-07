@@ -26,6 +26,8 @@ spec:
               value: {{ .Values.grafana.adminPassword | quote }}
             - name: GF_PATHS_PROVISIONING
               value: /etc/grafana/provisioning
+            - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
+              value: /var/lib/grafana/dashboards/overview.json
           ports:
             - name: http
               containerPort: 3000

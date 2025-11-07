@@ -1,4 +1,6 @@
 apiVersion: 1
+# These datasources are provisioned by the goosed-observability chart so Grafana ships
+# with Prometheus metrics, Loki logs, and Tempo traces wired up on first boot.
 datasources:
   - name: Prometheus
     uid: prometheus
