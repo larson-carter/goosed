@@ -10,6 +10,7 @@ The `pxe-stack` helpers ship with the default deployment, bringing DHCP, TFTP, a
      ```
 
    * The chart publishes three ports: DHCP (`67/udp`), TFTP (`69/udp`), and HTTP (`8080/tcp`). Expose them with a `LoadBalancer` or `NodePort` service and ensure the PXE VLAN can reach the selected nodes.
+   * The deployment advertises `PXE_DHCP_INTERFACE="eth0,en0"` by default so the DHCP helper binds to whichever of those host interfaces exists—handy for Docker Desktop on macOS where the bridged NIC is `en0`. Override `goosed-pxe-stack.dhcp.interface` when you need to target a different adapter (for example `ens192`).
 
 2. **Bridge your VMware Fusion VM to the PXE network**
    * Create a new VM with no installation media and set its network adapter to **Bridged (Autodetect)** so it shares the same layer-2 segment as the `pxe-stack` service.

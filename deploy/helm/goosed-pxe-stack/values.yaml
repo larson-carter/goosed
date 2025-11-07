@@ -25,7 +25,7 @@ tolerations: []
 
 dhcp:
   enabled: true
-  interface: eth0
+  interface: "eth0,en0"
   rangeStart: 192.168.122.100
   rangeEnd: 192.168.122.150
   subnetMask: 255.255.255.0
