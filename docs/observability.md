@@ -20,9 +20,9 @@ Open http://localhost:3000 in a browser. Default credentials are set in
 ## Default home dashboard
 
 After signing in Grafana automatically opens the **Goosed Observability Overview**
-dashboard. Use the `Service` dropdown at the top to focus on a specific workload or
-keep `All` selected for a global view. You can return to the dashboard at any time via
-`/d/goosed-overview` (Grafana redirects to the full slugged URL automatically).
+dashboard at `/d/goosed-overview/goosed-observability-overview`. Use the `Service`
+dropdown at the top to focus on a specific workload or keep `All` selected for a
+global view. You can revisit the dashboard at any time via the same URL.
 
 Panels provided out of the box include:
 
@@ -45,3 +45,15 @@ Grafana's Explore view also ships ready-to-use data sources:
 Because Loki is provisioned as part of the chart, you do not need to perform any manual
 configuration to access logs—the data source and dashboard panel are active on first
 login.
+
+## Troubleshooting Grafana
+
+If Grafana does not load the overview dashboard, collect the pod logs to diagnose the
+issue. Replace the namespace if you installed the chart elsewhere:
+
+```bash
+kubectl -n goose logs deploy/goosed-observability-grafana
+```
+
+Attach the output when reporting an issue—Grafana records provisioning and routing
+errors there, including missing dashboard files or incorrect home page settings.
