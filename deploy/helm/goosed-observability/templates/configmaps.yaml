@@ -46,7 +46,7 @@ metadata:
     {{- include "goosed-observability.labels" . | nindent 4 }}
 data:
   datasources.yaml: |-
-{{ (.Files.Get "../../../ops/grafana/datasources.yaml") | nindent 4 }}
+{{ (.Files.Get "files/grafana/datasources.yaml") | nindent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -55,10 +55,10 @@ metadata:
   labels:
     {{- include "goosed-observability.labels" . | nindent 4 }}
 data:
-{{- $dashboards := .Files.Glob "../../../ops/grafana/dashboards/*.json" }}
+{{- $dashboards := .Files.Glob "files/grafana/dashboards/*.json" }}
 {{- range $path, $file := $dashboards }}
   {{ base $path }}: |-
-{{ $file | nindent 4 }}
+{{ $file | toString | nindent 4 }}
 {{- end }}
 ---
 apiVersion: v1
