@@ -28,6 +28,8 @@ spec:
               value: /etc/grafana/provisioning
             - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
               value: /var/lib/grafana/dashboards/overview.json
+            - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_UID
+              value: goosed-overview
           ports:
             - name: http
               containerPort: 3000
