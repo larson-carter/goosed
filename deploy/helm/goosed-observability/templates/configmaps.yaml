@@ -58,7 +58,7 @@ data:
 {{- $dashboards := .Files.Glob "files/grafana/dashboards/*.json" }}
 {{- range $path, $file := $dashboards }}
   {{ base $path }}: |-
-{{ $file | nindent 4 }}
+{{ $file | toString | nindent 4 }}
 {{- end }}
 ---
 apiVersion: v1
