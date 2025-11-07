@@ -22,7 +22,7 @@ Open http://localhost:3000 in a browser. Default credentials are set in
 After signing in Grafana automatically opens the **Goosed Observability Overview**
 dashboard. Use the `Service` dropdown at the top to focus on a specific workload or
 keep `All` selected for a global view. You can return to the dashboard at any time via
-`/d/goosed-overview/goosed-observability-overview`.
+`/d/goosed-overview` (Grafana redirects to the full slugged URL automatically).
 
 Panels provided out of the box include:
 
