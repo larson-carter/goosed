@@ -19,6 +19,9 @@ spec:
       containers:
         - name: tempo
           image: {{ .Values.tempo.image }}
+          env:
+            - name: OTEL_SDK_DISABLED
+              value: "true"
           args:
             - "-config.file=/etc/tempo/tempo.yaml"
           ports:

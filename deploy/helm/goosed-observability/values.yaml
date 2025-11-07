@@ -5,6 +5,47 @@ otelCollector:
   image: otel/opentelemetry-collector-contrib:0.89.0
   replicaCount: 1
   resources: {}
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch: {}
+    exporters:
+      prometheus:
+        endpoint: 0.0.0.0:9464
+      otlp/tempo:
+        endpoint: goosed-observability-tempo:4317
+        tls:
+          insecure: true
+      logging:
+        loglevel: info
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+        path: /healthz
+    service:
+      extensions: [health_check]
+      telemetry:
+        logs:
+          level: info
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/tempo, logging]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus, logging]
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
 
 prometheus:
   image: prom/prometheus:v2.48.0
@@ -15,11 +56,105 @@ loki:
   image: grafana/loki:2.9.0
   replicaCount: 1
   resources: {}
+  config: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9096
+      log_level: info
+
+    common:
+      instance_addr: 127.0.0.1
+      path_prefix: /var/loki
+      storage:
+        filesystem:
+          chunks_directory: /var/loki/chunks
+          rules_directory: /var/loki/rules
+      ring:
+        kvstore:
+          store: inmemory
+      replication_factor: 1
+
+    query_range:
+      results_cache:
+        cache:
+          embedded_cache:
+            enabled: true
+            max_size_mb: 32
+
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: loki_index_
+            period: 24h
+
+    storage_config:
+      filesystem:
+        directory: /var/loki/chunks
+      boltdb_shipper:
+        shared_store: filesystem
+        cache_location: /var/loki/boltdb-cache
+        active_index_directory: /var/loki/index
+
+    compactor:
+      working_directory: /var/loki/compactor
+      shared_store: filesystem
+
+    ruler:
+      storage:
+        type: local
+        local:
+          directory: /var/loki/rules
+      rule_path: /var/loki/rules-temp
+      alertmanager_url: http://localhost:9093
+      ring:
+        kvstore:
+          store: inmemory
+
+    limits_config:
+      retention_period: 168h
+
+    chunk_store_config:
+      max_look_back_period: 0s
 
 tempo:
   image: grafana/tempo:2.3.1
   replicaCount: 1
   resources: {}
+  config: |
+    server:
+      http_listen_port: 3200
+      log_level: info
+
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+            http:
+
+    ingester:
+      max_block_bytes: 104857600
+      max_block_duration: 5m
+      trace_idle_period: 10s
+
+    compactor:
+      compaction:
+        compaction_window: 24h
+
+    storage:
+      trace:
+        backend: local
+        wal:
+          path: /var/tempo/wal
+        local:
+          path: /var/tempo/traces
+
 
 grafana:
   image: grafana/grafana:10.1.4

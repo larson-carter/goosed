@@ -13,7 +13,7 @@ func Load() (Config, error) {
 	cfg := Config{}
 
 	cfg.DHCP.Enabled = getEnvBool("PXE_ENABLE_DHCP", true)
-	cfg.DHCP.Interface = getEnv("PXE_DHCP_INTERFACE", "eth0")
+	ifaceCandidates := getEnv("PXE_DHCP_INTERFACE", "eth0,en0")
 	if start := os.Getenv("PXE_DHCP_RANGE_START"); start != "" {
 		cfg.DHCP.RangeStart = net.ParseIP(start)
 		if cfg.DHCP.RangeStart == nil {
@@ -71,6 +71,12 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("invalid PXE_DHCP_NEXT_SERVER: %q", ns)
 		}
 	}
+	resolvedInterface, err := resolveDHCPInterface(ifaceCandidates, cfg.DHCP.ServerIP)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.DHCP.Interface = resolvedInterface
+
 	cfg.DHCP.BootFilename = getEnv("PXE_DHCP_BOOT_FILE", "undionly.kpxe")
 
 	if cfg.DHCP.Enabled {
@@ -107,6 +113,13 @@ func Load() (Config, error) {
 	cfg.HTTP.Port = getEnvInt("PXE_HTTP_PORT", 8080)
 	cfg.HTTP.APIEndpoint = getEnv("PXE_HTTP_API_ENDPOINT", "http://api.goose.local")
 	cfg.HTTP.BrandingFS = os.Getenv("PXE_HTTP_BRANDING_FS")
+	if fallbacks := os.Getenv("PXE_HTTP_FALLBACK_PORTS"); fallbacks != "" {
+		ports, err := parsePortList(fallbacks)
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid PXE_HTTP_FALLBACK_PORTS: %w", err)
+		}
+		cfg.HTTP.FallbackPorts = ports
+	}
 
 	return cfg, nil
 }
@@ -137,6 +150,92 @@ func bytesCompare(a, b net.IP) int {
 	return 0
 }
 
+func resolveDHCPInterface(spec string, serverIP net.IP) (string, error) {
+	candidates := strings.Split(spec, ",")
+	trimmed := make([]string, 0, len(candidates))
+	for _, c := range candidates {
+		name := strings.TrimSpace(c)
+		if name == "" {
+			continue
+		}
+		trimmed = append(trimmed, name)
+	}
+
+	tryAuto := false
+	if len(trimmed) == 0 {
+		tryAuto = true
+	} else {
+		next := make([]string, 0, len(trimmed))
+		for _, name := range trimmed {
+			if strings.EqualFold(name, "auto") {
+				tryAuto = true
+				continue
+			}
+			next = append(next, name)
+		}
+		trimmed = next
+	}
+
+	if tryAuto {
+		if serverIP == nil {
+			return "", fmt.Errorf("PXE_DHCP_INTERFACE=auto requires PXE_DHCP_SERVER_IP")
+		}
+		if name, err := interfaceByIP(serverIP); err == nil {
+			return name, nil
+		} else {
+			return "", err
+		}
+	}
+
+	for _, name := range trimmed {
+		if _, err := net.InterfaceByName(name); err == nil {
+			return name, nil
+		}
+	}
+
+	availableIfaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("resolve PXE_DHCP_INTERFACE: candidates %q not found and unable to list interfaces: %w", trimmed, err)
+	}
+	available := make([]string, 0, len(availableIfaces))
+	for _, iface := range availableIfaces {
+		available = append(available, iface.Name)
+	}
+	return "", fmt.Errorf("resolve PXE_DHCP_INTERFACE: none of the candidates %q are present on this host (available: %s)", trimmed, strings.Join(available, ", "))
+}
+
+func interfaceByIP(ip net.IP) (string, error) {
+	if ip == nil {
+		return "", fmt.Errorf("cannot resolve interface for nil IP")
+	}
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("list interfaces: %w", err)
+	}
+	for _, iface := range interfaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			var candidate net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				candidate = v.IP
+			case *net.IPAddr:
+				candidate = v.IP
+			}
+			if candidate == nil {
+				continue
+			}
+			if candidate.To4() != nil && candidate.Equal(ip) {
+				return iface.Name, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no network interface found with address %s", ip.String())
+}
+
 func getEnv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -161,4 +260,32 @@ func getEnvInt(key string, def int) int {
 		}
 	}
 	return def
+}
+
+func parsePortList(value string) ([]int, error) {
+	parts := strings.Split(value, ",")
+	ports := make([]int, 0, len(parts))
+	seen := make(map[int]struct{}, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		port, err := strconv.Atoi(trimmed)
+		if err != nil {
+			return nil, fmt.Errorf("%q is not a valid integer", trimmed)
+		}
+		if port <= 0 || port > 65535 {
+			return nil, fmt.Errorf("port %d is outside the valid range 1-65535", port)
+		}
+		if _, exists := seen[port]; exists {
+			continue
+		}
+		seen[port] = struct{}{}
+		ports = append(ports, port)
+	}
+	if len(ports) == 0 {
+		return nil, nil
+	}
+	return ports, nil
 }

@@ -30,6 +30,10 @@ spec:
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "{{ .Values.otel.exporterEndpoint }}"
+            - name: OTEL_SDK_DISABLED
+              value: "true"
             - name: PXE_ENABLE_DHCP
               value: {{ .Values.dhcp.enabled | quote }}
             - name: PXE_DHCP_INTERFACE
@@ -64,6 +68,10 @@ spec:
               value: {{ .Values.http.enabled | quote }}
             - name: PXE_HTTP_PORT
               value: {{ .Values.http.port | quote }}
+            {{- if and .Values.hostNetwork .Values.http.fallbackPorts }}
+            - name: PXE_HTTP_FALLBACK_PORTS
+              value: "{{ join "," .Values.http.fallbackPorts }}"
+            {{- end }}
             - name: PXE_HTTP_API_ENDPOINT
               value: {{ .Values.http.apiEndpoint | quote }}
             {{- if .Values.http.brandingPath }}

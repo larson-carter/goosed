@@ -108,6 +108,7 @@ goosed/
 
 * [Getting Started (Prereqs + Quickstart)](docs/getting-started.md)
 * [Deploying goose'd in Kubernetes](docs/deploying.md)
+* [Observability with Grafana](docs/observability.md)
 * [PXE Boot Strategies: Development vs Lab](docs/pxe-environments.md)
 * [PXE Booting VMware Fusion Guests](docs/vmware-fusion.md)
 * [RHEL/Rocky and Windows Provisioning Flows](docs/provisioning-flows.md)
@@ -120,7 +121,7 @@ goosed/
 * **Prometheus** scrapes `/metrics` on each service.
 * **Loki** ingests JSON logs.
 * **Tempo** stores traces.
-* **Grafana** (dashboards in `ops/grafana/dashboards/`) visualizes:
+* **Grafana** (dashboards in `deploy/helm/goosed-observability/files/grafana/dashboards/`) visualizes:
 
     * API latency (p50/p95/p99), error rate
     * Orchestrator step timings

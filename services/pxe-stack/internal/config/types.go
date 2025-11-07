@@ -34,8 +34,9 @@ type TFTPConfig struct {
 }
 
 type HTTPConfig struct {
-	Enabled     bool
-	Port        int
-	APIEndpoint string
-	BrandingFS  string
+	Enabled       bool
+	Port          int
+	FallbackPorts []int
+	APIEndpoint   string
+	BrandingFS    string
 }

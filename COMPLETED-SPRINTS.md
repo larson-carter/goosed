@@ -347,8 +347,8 @@ Return all code files complete.
 **Tasks**
 
 1. Fill `ops/otel/collector.yaml`, Prom scrape configs, Loki & Tempo configs.
-2. Create dashboards JSONs in `ops/grafana/dashboards/`.
-3. Helm chart `goosed-observability` to deploy stack with datasources from `ops/grafana/datasources.yaml`.
+2. Create dashboards JSONs in `deploy/helm/goosed-observability/files/grafana/dashboards/`.
+3. Helm chart `goosed-observability` to deploy stack with datasources from `deploy/helm/goosed-observability/files/grafana/datasources.yaml`.
 
 **Acceptance**
 
@@ -366,10 +366,10 @@ Produce observability assets:
 Include service pipelines for traces, metrics, logs.
 
 2) deploy/helm/goosed-observability:
-- Chart that deploys otel-collector (Deployment + Service), Prometheus, Loki, Tempo, Grafana with datasources from ops/grafana/datasources.yaml.
+- Chart that deploys otel-collector (Deployment + Service), Prometheus, Loki, Tempo, Grafana with datasources from deploy/helm/goosed-observability/files/grafana/datasources.yaml.
 - Grafana loads dashboards from configmap mounted at /var/lib/grafana/dashboards.
 
-3) ops/grafana/dashboards/api.json: panels for http_server_duration_seconds histogram (p95), request count, error rate; label by service="goosed-api".
+3) deploy/helm/goosed-observability/files/grafana/dashboards/api.json: panels for http_server_duration_seconds histogram (p95), request count, error rate; label by service="goosed-api".
 Create similar dashboards for orchestrator, bootd, agents.
 
 Return all YAML/JSON contents.
