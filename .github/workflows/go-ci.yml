@@ -32,3 +32,28 @@ jobs:
 
       - name: Run golangci-lint
         run: golangci-lint run ./...
+
+  web-lint-and-format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ui/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: services/ui/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check

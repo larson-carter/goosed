@@ -1,0 +1,79 @@
+{{- $fullName := include "goosed-ui.fullname" . -}}
+{{- $labels := include "goosed-ui.labels" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $fullName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $fullName }}
+        {{- $labels | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+      {{- if .Values.podStrategy.singlePod }}
+        - name: api
+          image: "{{ .Values.image.api.repository }}:{{ .Values.image.api.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http-api
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}-config
+            - secretRef:
+                name: {{ $fullName }}-secret
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http-api
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-api
+            initialDelaySeconds: 10
+          resources:
+            {{- toYaml .Values.resources.api | nindent 12 }}
+        - name: web
+          image: "{{ .Values.image.web.repository }}:{{ .Values.image.web.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http-web
+              containerPort: 80
+          resources:
+            {{- toYaml .Values.resources.web | nindent 12 }}
+      {{- else }}
+        - name: api
+          image: "{{ .Values.image.api.repository }}:{{ .Values.image.api.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http-api
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}-config
+            - secretRef:
+                name: {{ $fullName }}-secret
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http-api
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-api
+          resources:
+            {{- toYaml .Values.resources.api | nindent 12 }}
+      {{- end }}

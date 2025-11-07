@@ -1,6 +1,9 @@
 MODULES := $(shell find . -name go.mod -not -path "./vendor/*")
 SERVICES := api bootd orchestrator blueprints inventory artifacts-gw pxe-stack
 
+UI_API_IMAGE ?= goosed/ui-api:dev
+UI_WEB_IMAGE ?= goosed/ui-web:dev
+
 .PHONY: tidy lint test build run-api run-all
 
 tidy:
@@ -32,4 +35,9 @@ run-api:
 	go run services/api/cmd/api/main.go
 
 run-all:
-	@echo "run-all is not yet implemented"
+        @echo "run-all is not yet implemented"
+
+.PHONY: ui-build
+ui-build:
+	@docker build -f services/ui/api/Dockerfile -t $(UI_API_IMAGE) services/ui/api
+	@docker build -f services/ui/web/Dockerfile -t $(UI_WEB_IMAGE) services/ui/web
