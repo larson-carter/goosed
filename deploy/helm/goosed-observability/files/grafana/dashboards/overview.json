@@ -258,7 +258,7 @@
             "type": "tempo",
             "uid": "tempo"
           },
-          "query": "{ service.name = \"$service\" }",
+          "query": "{ service.name =~ \"${service}\" }",
           "queryType": "traceqlSearch",
           "refId": "A"
         }
@@ -297,7 +297,8 @@
         "refresh": 2,
         "regex": "",
         "sort": 1,
-        "type": "query"
+        "type": "query",
+        "allValue": ".+"
       }
     ]
   },
