@@ -19,9 +19,9 @@ Open http://localhost:3000 in a browser. Default credentials are set in
 
 ## Default home dashboard
 
-After signing in you land on the **Goosed Observability Overview** dashboard. Use the
-`Service` dropdown at the top to focus on a specific workload or keep `All` selected for
-a global view.
+After signing in you land on the **Goosed Observability Overview** dashboard at
+`/d/goosed-overview/goosed-observability-overview`. Use the `Service` dropdown at the
+top to focus on a specific workload or keep `All` selected for a global view.
 
 Panels provided out of the box include:
 

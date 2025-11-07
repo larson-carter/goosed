@@ -30,6 +30,8 @@ spec:
               value: /var/lib/grafana/dashboards/overview.json
             - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_UID
               value: goosed-overview
+            - name: GF_USERS_HOME_PAGE
+              value: /d/goosed-overview/goosed-observability-overview
           ports:
             - name: http
               containerPort: 3000
