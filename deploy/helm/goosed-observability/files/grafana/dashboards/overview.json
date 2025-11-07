@@ -249,7 +249,10 @@
         "limit": 20,
         "maxDuration": "",
         "query": "",
-        "search": "",
+        "search": {
+          "query": "",
+          "tags": []
+        },
         "showSearch": true
       },
       "targets": [
