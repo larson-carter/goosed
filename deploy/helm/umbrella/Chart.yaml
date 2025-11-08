@@ -30,3 +30,6 @@ dependencies:
     version: 0.1.0
     repository: file://../goosed-pxe-stack
     condition: goosed-pxe-stack.enabled
+  - name: goosed-ui
+    version: 0.1.0
+    repository: file://../../../services/ui/chart/goosed-ui

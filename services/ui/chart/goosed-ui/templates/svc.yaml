@@ -1,0 +1,51 @@
+{{- $fullName := include "goosed-ui.fullname" . -}}
+{{- $labels := include "goosed-ui.labels" . -}}
+{{- if .Values.podStrategy.singlePod }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ $fullName }}
+  ports:
+    - name: http-web
+      port: {{ .Values.service.port }}
+      targetPort: 80
+    - name: http-api
+      port: {{ .Values.service.apiPort }}
+      targetPort: 8080
+{{- else }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-api
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ $fullName }}
+  ports:
+    - name: http-api
+      port: {{ .Values.service.apiPort }}
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-web
+  labels:
+    {{- $labels | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ $fullName }}-web
+  ports:
+    - name: http-web
+      port: {{ .Values.service.port }}
+      targetPort: 80
+{{- end }}

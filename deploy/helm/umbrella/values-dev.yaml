@@ -75,3 +75,14 @@ goosed-pxe-stack:
   enabled: true
   dhcp:
     enabled: true
+
+# UI defaults for local development. Override the signing keys for any shared environment.
+goosed-ui:
+  config:
+    env:
+      API_BASE_URL: https://api.goosed.local
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+    secret:
+      DB_DSN: postgres://goosed:goosed@goose-postgres-postgresql.goose.svc.cluster.local:5432/goosed?sslmode=disable
+      JWT_SIGNING_KEY: dev-signing-key-change-me
+      JWT_REFRESH_KEY: dev-refresh-key-change-me

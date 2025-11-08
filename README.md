@@ -5,7 +5,7 @@
 ## TL;DR
 
 * **One platform** for RHEL/Rocky + Windows imaging/install flows
-* **Headless-first**: CLI + API now, UI later
+* **Headless-first** foundation with a **preview UI** (auth flows are landing in the UI API)
 * **Git as source of truth**: blueprints/workflows in Git; facts & run history tracked
 * **Air-gap ready**: import/export signed bundles to offline S3 (SeaweedFS everywhere, mirror as needed)
 * **Custom boot UX**: iPXE/GRUB/pxelinux theming + one-time boot tokens
@@ -46,22 +46,22 @@ goose’d is a set of Go microservices (running as containers) plus a small set 
 * **Agent**: RHEL systemd service & Windows service to execute post-install ops and report facts.
 * **Observability**: OTel → Prometheus (metrics), Loki (logs), Tempo (traces), Grafana (dashboards).
 
-Everything is **headless** (API + CLI). Add the UI later without blocking provisioning.
+Everything is still **headless-first** (API + CLI). A preview UI now ships alongside the platform; its auth/session wiring lives in the UI API service and is evolving rapidly.
 
 ## Microservices
 
-| Service                  | What it does                                                                                                       | Depends on                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| **api**                  | REST for machines, runs, artifacts, render endpoints (iPXE/Kickstart/Unattend), audit; issues one-time boot tokens | Postgres, NATS, S3          |
-| **bootd**                | PXE edge for **iPXE/HTTPBoot**; serves branding; chains to API render endpoints                                    | API, S3, NATS               |
-| **pxe-stack**            | DHCP/TFTP helpers (deployed by default) to hand out iPXE binaries and bridge into the API
-                | Host network, branding data  |
-| **blueprints**           | Pulls/reads `infra/` blueprints & workflows, renders templates, emits update events                                | Git, API, NATS              |
-| **inventory**            | Consumes agent facts, stores snapshots, computes diffs                                                             | API, NATS                   |
-| **artifacts-gw**         | S3 presign proxy, optional range-request passthrough for large objects                                             | S3, API                     |
-| **bundler** (`goosectl`) | Build/import **air-gap bundles** (images, ISOs/WIMs, drivers); sign & verify                                       | S3, API                     |
-| **agent-rhel**           | Systemd service for post-install ops & facts                                                                       | API, S3                     |
-| **agent-windows**        | Windows service (PowerShell bootstrap) for post-install & facts                                                    | API, S3                     |
+| Service                  | What it does                                                                 | Depends on                  |
+| ------------------------ | ---------------------------------------------------------------------------- | --------------------------- |
+| **api**                  | REST for machines, runs, artifacts, render endpoints, audit, boot tokens    | Postgres, NATS, S3          |
+| **bootd**                | PXE edge for iPXE/HTTPBoot; serves branding; chains to API renders           | API, S3, NATS               |
+| **pxe-stack**            | DHCP/TFTP helpers to hand out iPXE binaries and bridge into the API          | Host network, branding data |
+| **blueprints**           | Pulls/reads `infra/` blueprints & workflows, renders templates, emits events | Git, API, NATS              |
+| **inventory**            | Consumes agent facts, stores snapshots, computes diffs                       | API, NATS                   |
+| **artifacts-gw**         | S3 presign proxy, optional range-request passthrough for large objects       | S3, API                     |
+| **bundler** (`goosectl`) | Build/import air-gap bundles (images, ISOs/WIMs, drivers); sign & verify     | S3, API                     |
+| **ui (api + web)**       | Go auth/session API plus Vite/React web (served by Nginx)                    | Postgres (schema `ui_auth`) |
+| **agent-rhel**           | Systemd service for post-install ops & facts                                 | API, S3                     |
+| **agent-windows**        | Windows service (PowerShell bootstrap) for post-install & facts              | API, S3                     |
 
 **Event bus**: subjects like `goosed.machines.enrolled`, `goosed.runs.started`, `goosed.agent.facts`, `goosed.blueprints.updated`.
 
@@ -107,6 +107,7 @@ goosed/
 ## Documentation Index
 
 * [Getting Started (Prereqs + Quickstart)](docs/getting-started.md)
+* [UI Service (architecture, deployment, access)](docs/ui-service.md)
 * [Deploying goose'd in Kubernetes](docs/deploying.md)
 * [Observability with Grafana](docs/observability.md)
 * [PXE Boot Strategies: Development vs Lab](docs/pxe-environments.md)

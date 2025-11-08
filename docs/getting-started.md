@@ -74,7 +74,11 @@ Make sure the following tools and services are available before you begin:
      --set s3.port=8333
    ```
 
-6. **Deploy goose'd (PXE helpers included)**
+6. **Deploy goose'd (core services, PXE helpers, and UI)**
+
+   The development values enable the UI API and web frontend inside the umbrella release. Rotate the default JWT keys before
+   sharing an environment by supplying `--set goosed-ui.config.secret.JWT_SIGNING_KEY=...` and
+   `--set goosed-ui.config.secret.JWT_REFRESH_KEY=...`.
 
    ```bash
    helm dependency build deploy/helm/umbrella
@@ -88,6 +92,14 @@ Make sure the following tools and services are available before you begin:
 
    ```bash
    kubectl -n goose get pods
+   ```
+
+8. **Reach the UI** – port-forward the web service and open the login screen at `http://localhost:5173/auth/login`. The
+   UI currently renders the authentication and dashboard flows without talking to the API, so expect placeholder behaviour
+   while the UI API gains real endpoints.
+
+   ```bash
+   kubectl -n goose port-forward svc/goose-goosed-ui 5173:80
    ```
 
 Continue with the [deployment guide](deploying.md) if you want to customise the Helm release or upgrade services independently.
