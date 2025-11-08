@@ -2,9 +2,11 @@
 
 ARG GO_VERSION=1.25
 
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS builder
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS builder
 
 WORKDIR /src
+
+RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -13,7 +15,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/service ./services/bootd/cmd/bootd
 
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /out/service /app/service
 WORKDIR /app
 ENTRYPOINT ["/app/service"]

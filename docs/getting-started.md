@@ -90,4 +90,29 @@ Make sure the following tools and services are available before you begin:
    kubectl -n goose get pods
    ```
 
+8. **(Preview) Deploy the UI service** – the UI ships as a Go API (`ui-api`) and a static web frontend (`ui-web`). The
+   defaults below reuse the same Postgres/NATS stack and assume you have a TLS-terminating ingress in front of the API.
+   Generate strong signing keys before applying them.
+
+   ```bash
+   UI_JWT_SIGNING_KEY=$(openssl rand -base64 32)
+   UI_JWT_REFRESH_KEY=$(openssl rand -base64 32)
+
+   helm upgrade --install goosed-ui services/ui/chart/goosed-ui \
+     --namespace goose \
+     --set config.env.API_BASE_URL="https://api.goosed.local" \
+     --set config.env.CORS_ALLOWED_ORIGINS="http://localhost:5173" \
+     --set config.secret.DB_DSN="postgres://goosed:goosed@goose-postgres-postgresql.goose.svc.cluster.local:5432/goosed?sslmode=disable" \
+     --set config.secret.JWT_SIGNING_KEY="${UI_JWT_SIGNING_KEY}" \
+     --set config.secret.JWT_REFRESH_KEY="${UI_JWT_REFRESH_KEY}"
+   ```
+
+9. **Reach the UI** – port-forward the web service and open the login screen at `http://localhost:5173/auth/login`. The
+   UI currently renders the authentication and dashboard flows without talking to the API, so expect placeholder behaviour
+   while the UI API gains real endpoints.
+
+   ```bash
+   kubectl -n goose port-forward svc/goosed-ui 5173:80
+   ```
+
 Continue with the [deployment guide](deploying.md) if you want to customise the Helm release or upgrade services independently.

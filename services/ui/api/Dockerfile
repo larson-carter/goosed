@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 FROM golang:1.25-alpine AS builder
 WORKDIR /src
+RUN apk add --no-cache git
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
