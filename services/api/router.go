@@ -84,7 +84,8 @@ func (a *API) Routes() (http.Handler, error) {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Post("/machines", a.handleUpsertMachine)
+                r.Get("/machines", a.handleListMachines)
+                r.Post("/machines", a.handleUpsertMachine)
 		r.Get("/boot/ipxe", a.handleIPXE)
 		r.Get("/render/kickstart", a.handleKickstart)
 		r.Get("/render/unattend", a.handleUnattend)
