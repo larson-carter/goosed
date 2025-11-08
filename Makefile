@@ -35,7 +35,7 @@ run-api:
 	go run services/api/cmd/api/main.go
 
 run-all:
-        @echo "run-all is not yet implemented"
+	@echo "run-all is not yet implemented"
 
 .PHONY: ui-build
 ui-build:
