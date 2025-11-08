@@ -35,6 +35,10 @@ kind, Docker Desktop, or your registry of choice.【F:Makefile†L1-L29】【F:M
 make ui-build UI_API_IMAGE=goosed/ui-api:dev UI_WEB_IMAGE=goosed/ui-web:dev
 ```
 
+> **Tip:** `make build` now invokes `ui-build` automatically so the `goosed/ui-api:dev`
+> and `goosed/ui-web:dev` tags exist before you deploy the Helm chart during the
+> standard quickstart flow.
+
 ## Deploying on Kubernetes
 
 The Helm chart defaults to a `ClusterIP` service exposing port `80` for the web UI and `8080` for the API. Keep the single-pod

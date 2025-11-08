@@ -30,6 +30,7 @@ build:
 		echo "==> services/$$svc"; \
 		docker build -f services/$$svc/Dockerfile -t goosed/$$svc:dev .; \
 	done
+	@$(MAKE) ui-build
 
 run-api:
 	go run services/api/cmd/api/main.go
