@@ -86,6 +86,11 @@ func (a *API) Routes() (http.Handler, error) {
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/machines", a.handleListMachines)
 		r.Post("/machines", a.handleUpsertMachine)
+		r.Get("/blueprints", a.handleListBlueprints)
+		r.Post("/blueprints", a.handleCreateBlueprint)
+		r.Get("/blueprints/{blueprintID}", a.handleGetBlueprint)
+		r.Put("/blueprints/{blueprintID}", a.handleUpdateBlueprint)
+		r.Delete("/blueprints/{blueprintID}", a.handleDeleteBlueprint)
 		r.Get("/boot/ipxe", a.handleIPXE)
 		r.Get("/render/kickstart", a.handleKickstart)
 		r.Get("/render/unattend", a.handleUnattend)

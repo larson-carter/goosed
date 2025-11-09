@@ -31,14 +31,7 @@ import type {
   MachineFactEntry,
   APIRun,
 } from "../types/machines";
-
-const API_BASE_URL = (() => {
-  const raw = import.meta.env.VITE_API_BASE_URL;
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return raw.replace(/\/$/, "");
-  }
-  return "/api";
-})();
+import { apiURL } from "../lib/api";
 
 const STATUS_META: Record<
   MachineStatus,
@@ -109,7 +102,7 @@ function useMachinesQuery() {
   return useQuery<MachinesPayload, Error>({
     queryKey: ["machines"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/v1/machines`, {
+      const response = await fetch(apiURL("/v1/machines"), {
         credentials: "include",
       });
       if (!response.ok) {
