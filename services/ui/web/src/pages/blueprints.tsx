@@ -69,7 +69,11 @@ function formatTimestamp(value?: string) {
   }).format(date);
 }
 
-function useBlueprintsQuery() {
+type BlueprintsQueryOptions = {
+  onSuccess?: (data: BlueprintsResponse) => void;
+};
+
+function useBlueprintsQuery(options?: BlueprintsQueryOptions) {
   return useQuery<BlueprintsResponse, Error>({
     queryKey: ["blueprints"],
     queryFn: async () => {
@@ -87,6 +91,7 @@ function useBlueprintsQuery() {
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
+    ...options,
   });
 }
 
@@ -103,8 +108,9 @@ async function extractError(response: Response) {
 }
 
 export function BlueprintsPage() {
-  const [selectedBlueprint, setSelectedBlueprint] =
-    useState<BlueprintRecord | null>(null);
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(
+    null,
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [formError, setFormError] = useState<string | null>(null);
@@ -115,26 +121,40 @@ export function BlueprintsPage() {
     error,
     isLoading,
     isFetching,
-  } = useBlueprintsQuery();
+  } = useBlueprintsQuery({
+    onSuccess: (result) => {
+      setSelectedBlueprintId((current) => {
+        if (!result.blueprints.length) {
+          return null;
+        }
+        if (
+          current &&
+          result.blueprints.some((blueprint) => blueprint.id === current)
+        ) {
+          return current;
+        }
+        return result.blueprints[0]?.id ?? null;
+      });
+    },
+  });
 
   const blueprints = useMemo(
     () => (data?.blueprints ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
     [data?.blueprints],
   );
 
-  useEffect(() => {
+  const selectedBlueprint = useMemo(() => {
     if (!blueprints.length) {
-      setSelectedBlueprint(null);
-      return;
+      return null;
     }
-    setSelectedBlueprint((previous) => {
-      if (!previous) {
-        return blueprints[0];
-      }
-      const match = blueprints.find((item) => item.id === previous.id);
-      return match ?? blueprints[0];
-    });
-  }, [blueprints]);
+    if (!selectedBlueprintId) {
+      return blueprints[0];
+    }
+    return (
+      blueprints.find((blueprint) => blueprint.id === selectedBlueprintId) ??
+      blueprints[0]
+    );
+  }, [blueprints, selectedBlueprintId]);
 
   const {
     register,
@@ -178,7 +198,7 @@ export function BlueprintsPage() {
     onSuccess: (blueprint) => {
       setIsFormOpen(false);
       queryClient.invalidateQueries({ queryKey: ["blueprints"] });
-      setSelectedBlueprint(blueprint);
+      setSelectedBlueprintId(blueprint.id);
     },
   });
 
@@ -205,7 +225,7 @@ export function BlueprintsPage() {
     onSuccess: (blueprint) => {
       setIsFormOpen(false);
       queryClient.invalidateQueries({ queryKey: ["blueprints"] });
-      setSelectedBlueprint(blueprint);
+      setSelectedBlueprintId(blueprint.id);
     },
   });
 
@@ -486,7 +506,7 @@ export function BlueprintsPage() {
                   <button
                     key={blueprint.id}
                     type="button"
-                    onClick={() => setSelectedBlueprint(blueprint)}
+                    onClick={() => setSelectedBlueprintId(blueprint.id)}
                     className={`w-full rounded-lg border px-4 py-3 text-left transition-colors ${
                       isSelected
                         ? "border-primary bg-primary/10"
