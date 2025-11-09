@@ -20,7 +20,13 @@ const API_BASE_URL = (() => {
   if (metaBaseURL) {
     return metaBaseURL;
   }
-  return "/api";
+  if (
+    typeof window !== "undefined" &&
+    /^(localhost|127\.0\.0\.1|::1)$/.test(window.location.hostname)
+  ) {
+    return "/api";
+  }
+  return "";
 })();
 
 export function apiURL(path: string) {
