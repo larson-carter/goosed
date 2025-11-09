@@ -25,6 +25,19 @@ import {
   Tag,
   TimerReset,
 } from "lucide-react";
+import type {
+  MachineStatus,
+  RunStatus,
+  StatusCounts,
+  MachinesPayload,
+  MachineListItem,
+  MachineNetwork,
+  MachineRecord,
+  MachineRun,
+  MachineFact,
+  MachineFactEntry,
+  APIRun,
+} from "../types/machines";
 
 const API_BASE_URL = (() => {
   const raw = import.meta.env.VITE_API_BASE_URL;
@@ -33,18 +46,6 @@ const API_BASE_URL = (() => {
   }
   return "/api";
 })();
-
-type MachineStatus =
-  | "ready"
-  | "provisioning"
-  | "error"
-  | "offline"
-  | "maintenance"
-  | "unknown";
-
-type RunStatus = "running" | "succeeded" | "failed" | "unknown";
-
-type StatusCounts = Record<MachineStatus, number>;
 
 const STATUS_META: Record<MachineStatus, { label: string; badge: string; dot: string }> = {
   ready: {
@@ -101,92 +102,6 @@ const RUN_META: Record<RunStatus, { label: string; badge: string; dot: string }>
     dot: "bg-muted-foreground",
   },
 };
-
-interface MachinesPayload {
-  machines: MachineListItem[];
-}
-
-interface MachineListItem {
-  machine: APIMachine;
-  status?: string | null;
-  latest_fact?: MachineFact | null;
-  recent_runs?: APIRun[] | null;
-}
-
-interface APIMachine {
-  id: string;
-  mac: string;
-  serial?: string;
-  profile?: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface MachineFact {
-  id: string;
-  snapshot?: Record<string, unknown> | null;
-  created_at: string;
-}
-
-interface APIRun {
-  id: string;
-  machine_id: string;
-  blueprint_id: string;
-  status: string;
-  started_at?: string | null;
-  finished_at?: string | null;
-  logs?: string | null;
-}
-
-interface MachineRecord {
-  id: string;
-  mac: string;
-  serial?: string;
-  hostname: string;
-  displayName?: string;
-  status: MachineStatus;
-  ip?: string;
-  os?: string;
-  blueprint?: string;
-  site?: string;
-  rack?: string;
-  position?: string;
-  owner?: string;
-  notes?: string;
-  tags: string[];
-  lastCheckIn?: string;
-  uptimeHours?: number;
-  hardware: {
-    cpu?: string;
-    memory?: string;
-    storage?: string;
-    bmc?: string;
-  };
-  networks: MachineNetwork[];
-  runs: MachineRun[];
-  facts: MachineFactEntry[];
-}
-
-interface MachineNetwork {
-  interface: string;
-  mac: string;
-  ip?: string;
-  vlan?: string;
-}
-
-interface MachineRun {
-  id: string;
-  blueprint?: string;
-  status: RunStatus;
-  startedAt?: string;
-  finishedAt?: string;
-}
-
-interface MachineFactEntry {
-  label: string;
-  value: string;
-  updatedAt?: string;
-}
 
 function useMachinesQuery() {
   return useQuery<MachinesPayload, Error>({

@@ -12,26 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type machineListItem struct {
-	Machine    Machine          `json:"machine"`
-	Status     string           `json:"status"`
-	LatestFact *machineListFact `json:"latest_fact,omitempty"`
-	RecentRuns []Run            `json:"recent_runs,omitempty"`
-}
-
-type machineListFact struct {
-	ID        uuid.UUID      `json:"id"`
-	Snapshot  map[string]any `json:"snapshot"`
-	CreatedAt time.Time      `json:"created_at"`
-}
-
-const (
-	machineStatusReady        = "ready"
-	machineStatusProvisioning = "provisioning"
-	machineStatusError        = "error"
-	machineStatusOffline      = "offline"
-)
-
 func (a *API) handleUpsertMachine(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		MAC     string         `json:"mac"`
