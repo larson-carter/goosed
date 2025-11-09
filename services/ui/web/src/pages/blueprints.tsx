@@ -5,11 +5,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import {
   CheckCircle2,
@@ -19,10 +15,7 @@ import {
   RefreshCcw,
   Trash2,
 } from "lucide-react";
-import type {
-  BlueprintRecord,
-  BlueprintsResponse,
-} from "../types/blueprints";
+import type { BlueprintRecord, BlueprintsResponse } from "../types/blueprints";
 
 const API_BASE_URL = (() => {
   const raw = import.meta.env.VITE_API_BASE_URL;
@@ -116,12 +109,7 @@ export function BlueprintsPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
-  const {
-    data,
-    error,
-    isLoading,
-    isFetching,
-  } = useBlueprintsQuery({
+  const { data, error, isLoading, isFetching } = useBlueprintsQuery({
     onSuccess: (result) => {
       setSelectedBlueprintId((current) => {
         if (!result.blueprints.length) {
@@ -139,7 +127,10 @@ export function BlueprintsPage() {
   });
 
   const blueprints = useMemo(
-    () => (data?.blueprints ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
+    () =>
+      (data?.blueprints ?? [])
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [data?.blueprints],
   );
 
@@ -245,7 +236,9 @@ export function BlueprintsPage() {
   });
 
   const activeMutation =
-    createBlueprint.isPending || updateBlueprint.isPending || deleteBlueprint.isPending;
+    createBlueprint.isPending ||
+    updateBlueprint.isPending ||
+    deleteBlueprint.isPending;
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -277,7 +270,10 @@ export function BlueprintsPage() {
       if (formMode === "create") {
         await createBlueprint.mutateAsync(payload);
       } else if (selectedBlueprint) {
-        await updateBlueprint.mutateAsync({ id: selectedBlueprint.id, payload });
+        await updateBlueprint.mutateAsync({
+          id: selectedBlueprint.id,
+          payload,
+        });
       }
     } catch (mutationError) {
       const message =
@@ -314,7 +310,11 @@ export function BlueprintsPage() {
       return Plus;
     }
     return null;
-  }, [createBlueprint.isPending, deleteBlueprint.isPending, updateBlueprint.isPending]);
+  }, [
+    createBlueprint.isPending,
+    deleteBlueprint.isPending,
+    updateBlueprint.isPending,
+  ]);
 
   const ActiveMutationIcon = mutationIcon;
 
@@ -343,10 +343,14 @@ export function BlueprintsPage() {
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-colors hover:bg-muted"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["blueprints"] })}
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["blueprints"] })
+            }
             disabled={isFetching}
           >
-            <RefreshCcw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            <RefreshCcw
+              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            />
             Refresh
           </button>
         </div>
@@ -358,7 +362,9 @@ export function BlueprintsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">
-                  {formMode === "create" ? "Create blueprint" : "Edit blueprint"}
+                  {formMode === "create"
+                    ? "Create blueprint"
+                    : "Edit blueprint"}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   Provide metadata and provisioning payload in JSON format.
@@ -430,14 +436,20 @@ export function BlueprintsPage() {
                 type="button"
                 className="rounded-md border px-3 py-2 text-sm transition-colors hover:bg-muted"
                 onClick={() => {
-                  reset(formMode === "edit" && selectedBlueprint
-                    ? {
-                        name: selectedBlueprint.name,
-                        os: selectedBlueprint.os,
-                        version: selectedBlueprint.version,
-                        data: JSON.stringify(selectedBlueprint.data ?? {}, null, 2),
-                      }
-                    : DEFAULT_FORM_VALUES);
+                  reset(
+                    formMode === "edit" && selectedBlueprint
+                      ? {
+                          name: selectedBlueprint.name,
+                          os: selectedBlueprint.os,
+                          version: selectedBlueprint.version,
+                          data: JSON.stringify(
+                            selectedBlueprint.data ?? {},
+                            null,
+                            2,
+                          ),
+                        }
+                      : DEFAULT_FORM_VALUES,
+                  );
                   setFormError(null);
                 }}
                 disabled={isSubmitting || activeMutation}
@@ -477,7 +489,9 @@ export function BlueprintsPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Available blueprints</h3>
-            {isFetching && <LoaderCircle className="h-4 w-4 animate-spin text-muted-foreground" />}
+            {isFetching && (
+              <LoaderCircle className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
           </div>
 
           {isLoading ? (
@@ -515,7 +529,9 @@ export function BlueprintsPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold">{blueprint.name}</p>
+                        <p className="text-sm font-semibold">
+                          {blueprint.name}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {blueprint.os} · Version {blueprint.version}
                         </p>
@@ -537,9 +553,12 @@ export function BlueprintsPage() {
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-xl font-semibold">{selectedBlueprint.name}</h3>
+                    <h3 className="text-xl font-semibold">
+                      {selectedBlueprint.name}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      {selectedBlueprint.os} · Version {selectedBlueprint.version}
+                      {selectedBlueprint.os} · Version{" "}
+                      {selectedBlueprint.version}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -587,12 +606,16 @@ export function BlueprintsPage() {
                     <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                       Blueprint ID
                     </dt>
-                    <dd className="text-sm font-mono">{selectedBlueprint.id}</dd>
+                    <dd className="text-sm font-mono">
+                      {selectedBlueprint.id}
+                    </dd>
                   </div>
                 </dl>
 
                 <div>
-                  <h4 className="text-sm font-semibold">Provisioning payload</h4>
+                  <h4 className="text-sm font-semibold">
+                    Provisioning payload
+                  </h4>
                   <pre className="mt-2 max-h-80 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-relaxed">
                     {JSON.stringify(selectedBlueprint.data ?? {}, null, 2)}
                   </pre>
