@@ -1,9 +1,4 @@
-import {
-  type ComponentType,
-  type SVGProps,
-  useMemo,
-  useState,
-} from "react";
+import { type ComponentType, type SVGProps, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -45,10 +40,14 @@ const API_BASE_URL = (() => {
   return "/api";
 })();
 
-const STATUS_META: Record<MachineStatus, { label: string; badge: string; dot: string }> = {
+const STATUS_META: Record<
+  MachineStatus,
+  { label: string; badge: string; dot: string }
+> = {
   ready: {
     label: "Ready",
-    badge: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    badge:
+      "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     dot: "bg-emerald-500",
   },
   provisioning: {
@@ -68,7 +67,8 @@ const STATUS_META: Record<MachineStatus, { label: string; badge: string; dot: st
   },
   maintenance: {
     label: "Maintenance",
-    badge: "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-300",
+    badge:
+      "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-300",
     dot: "bg-amber-500",
   },
   unknown: {
@@ -78,10 +78,14 @@ const STATUS_META: Record<MachineStatus, { label: string; badge: string; dot: st
   },
 };
 
-const RUN_META: Record<RunStatus, { label: string; badge: string; dot: string }> = {
+const RUN_META: Record<
+  RunStatus,
+  { label: string; badge: string; dot: string }
+> = {
   succeeded: {
     label: "Succeeded",
-    badge: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    badge:
+      "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     dot: "bg-emerald-500",
   },
   running: {
@@ -190,9 +194,13 @@ function formatUptime(hours?: number) {
 
 export function MachinesPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<MachineStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<MachineStatus | "all">(
+    "all",
+  );
   const [siteFilter, setSiteFilter] = useState<string>("all");
-  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(
+    null,
+  );
 
   const { data, isLoading, isError, error, refetch, isRefetching } =
     useMachinesQuery();
@@ -229,7 +237,10 @@ export function MachinesPage() {
         machine.rack,
         ...(machine.tags ?? []),
       ]
-        .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+        .filter(
+          (value): value is string =>
+            typeof value === "string" && value.trim().length > 0,
+        )
         .join(" ")
         .toLowerCase();
       return tokens.includes(query);
@@ -238,12 +249,18 @@ export function MachinesPage() {
 
   const activeMachineId = useMemo(() => {
     if (filteredMachines.length > 0) {
-      if (selectedMachineId && filteredMachines.some((item) => item.id === selectedMachineId)) {
+      if (
+        selectedMachineId &&
+        filteredMachines.some((item) => item.id === selectedMachineId)
+      ) {
         return selectedMachineId;
       }
       return filteredMachines[0].id;
     }
-    if (selectedMachineId && machines.some((item) => item.id === selectedMachineId)) {
+    if (
+      selectedMachineId &&
+      machines.some((item) => item.id === selectedMachineId)
+    ) {
       return selectedMachineId;
     }
     return machines[0]?.id ?? "";
@@ -260,7 +277,9 @@ export function MachinesPage() {
   const sites = useMemo(() => computeSiteOptions(machines), [machines]);
 
   const filtersActive =
-    statusFilter !== "all" || siteFilter !== "all" || searchTerm.trim().length > 0;
+    statusFilter !== "all" ||
+    siteFilter !== "all" ||
+    searchTerm.trim().length > 0;
 
   const summaryCards = [
     {
@@ -284,12 +303,15 @@ export function MachinesPage() {
       value: statusCounts.error,
       icon: AlertTriangle,
       helper: "Blocking issues",
-      change: statusCounts.error ? `${statusCounts.error} flagged` : "All clear",
+      change: statusCounts.error
+        ? `${statusCounts.error} flagged`
+        : "All clear",
       iconStyles: "text-rose-500",
     },
     {
       label: "Offline or maintenance",
-      value: statusCounts.offline + statusCounts.maintenance + statusCounts.unknown,
+      value:
+        statusCounts.offline + statusCounts.maintenance + statusCounts.unknown,
       icon: TimerReset,
       helper: "Awaiting action",
       change:
@@ -305,8 +327,8 @@ export function MachinesPage() {
       <div className="flex flex-col gap-2">
         <h2 className="text-2xl font-semibold">Machines</h2>
         <p className="text-sm text-muted-foreground">
-          Manage goose’d infrastructure, track provisioning runs, and inspect the latest
-          inventory snapshots.
+          Manage goose’d infrastructure, track provisioning runs, and inspect
+          the latest inventory snapshots.
         </p>
       </div>
 
@@ -351,7 +373,9 @@ export function MachinesPage() {
               <select
                 className="rounded-md border bg-background px-2.5 py-2 focus:border-primary focus:outline-none"
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as MachineStatus | "all")}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as MachineStatus | "all")
+                }
               >
                 <option value="all">All</option>
                 <option value="ready">Ready</option>
@@ -414,33 +438,50 @@ export function MachinesPage() {
             <table className="w-full min-w-[720px] table-fixed text-sm">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Hostname</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Hostname
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold">Status</th>
                   <th className="px-4 py-3 text-left font-semibold">Network</th>
-                  <th className="px-4 py-3 text-left font-semibold">Blueprint</th>
-                  <th className="px-4 py-3 text-left font-semibold">Location</th>
-                  <th className="px-4 py-3 text-left font-semibold">Last check-in</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Blueprint
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Location
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Last check-in
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold">Tags</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
                   <tr>
-                    <td className="px-4 py-12 text-center text-sm text-muted-foreground" colSpan={7}>
+                    <td
+                      className="px-4 py-12 text-center text-sm text-muted-foreground"
+                      colSpan={7}
+                    >
                       Loading machines…
                     </td>
                   </tr>
                 )}
                 {isError && !isLoading && machines.length === 0 && (
                   <tr>
-                    <td className="px-4 py-12 text-center text-sm text-muted-foreground" colSpan={7}>
+                    <td
+                      className="px-4 py-12 text-center text-sm text-muted-foreground"
+                      colSpan={7}
+                    >
                       Failed to load machines: {error?.message}
                     </td>
                   </tr>
                 )}
                 {!isLoading && !isError && filteredMachines.length === 0 && (
                   <tr>
-                    <td className="px-4 py-12 text-center text-sm text-muted-foreground" colSpan={7}>
+                    <td
+                      className="px-4 py-12 text-center text-sm text-muted-foreground"
+                      colSpan={7}
+                    >
                       No machines match the current filters.
                     </td>
                   </tr>
@@ -457,11 +498,15 @@ export function MachinesPage() {
                     >
                       <td className="px-4 py-3 align-top font-medium">
                         <div className="flex items-center gap-2">
-                          <ServerCog className="h-4 w-4 text-muted-foreground" aria-hidden />
+                          <ServerCog
+                            className="h-4 w-4 text-muted-foreground"
+                            aria-hidden
+                          />
                           <div>
                             <div>{machine.hostname}</div>
                             <div className="text-xs text-muted-foreground">
-                              {(machine.serial && machine.serial.trim()) || machine.mac.toUpperCase()}
+                              {(machine.serial && machine.serial.trim()) ||
+                                machine.mac.toUpperCase()}
                             </div>
                           </div>
                         </div>
@@ -471,7 +516,9 @@ export function MachinesPage() {
                       </td>
                       <td className="px-4 py-3 align-top">
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium">{machine.ip ?? "—"}</span>
+                          <span className="font-medium">
+                            {machine.ip ?? "—"}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {machine.mac.toUpperCase()}
                           </span>
@@ -479,9 +526,13 @@ export function MachinesPage() {
                       </td>
                       <td className="px-4 py-3 align-top">
                         <div className="flex flex-col gap-1">
-                          <span>{machine.os ?? machine.blueprint ?? "Unknown"}</span>
+                          <span>
+                            {machine.os ?? machine.blueprint ?? "Unknown"}
+                          </span>
                           {machine.blueprint && (
-                            <span className="text-xs text-muted-foreground">{machine.blueprint}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {machine.blueprint}
+                            </span>
                           )}
                         </div>
                       </td>
@@ -489,7 +540,9 @@ export function MachinesPage() {
                         <div className="flex flex-col gap-1">
                           <span>{machine.site ?? "Unknown"}</span>
                           <span className="text-xs text-muted-foreground">
-                            {[machine.rack, machine.position].filter(Boolean).join(" • ") || "—"}
+                            {[machine.rack, machine.position]
+                              .filter(Boolean)
+                              .join(" • ") || "—"}
                           </span>
                         </div>
                       </td>
@@ -507,7 +560,11 @@ export function MachinesPage() {
                               {tag}
                             </span>
                           ))}
-                          {machine.tags.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                          {machine.tags.length === 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              —
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -523,9 +580,13 @@ export function MachinesPage() {
             <div className="flex h-full flex-col gap-5 p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedMachine.hostname}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {selectedMachine.hostname}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    {selectedMachine.displayName ?? selectedMachine.serial ?? selectedMachine.mac}
+                    {selectedMachine.displayName ??
+                      selectedMachine.serial ??
+                      selectedMachine.mac}
                   </p>
                 </div>
                 <StatusBadge status={selectedMachine.status} />
@@ -541,24 +602,37 @@ export function MachinesPage() {
                 <InfoRow
                   icon={MapPin}
                   label="Location"
-                  primary={[selectedMachine.site, selectedMachine.rack]
-                    .filter(Boolean)
-                    .join(" • ") || "Unknown"}
-                  secondary={selectedMachine.position ? `Position ${selectedMachine.position}` : undefined}
+                  primary={
+                    [selectedMachine.site, selectedMachine.rack]
+                      .filter(Boolean)
+                      .join(" • ") || "Unknown"
+                  }
+                  secondary={
+                    selectedMachine.position
+                      ? `Position ${selectedMachine.position}`
+                      : undefined
+                  }
                 />
                 <InfoRow
                   icon={LaptopMinimal}
                   label="Operating system"
-                  primary={selectedMachine.os ?? selectedMachine.blueprint ?? "Unknown"}
+                  primary={
+                    selectedMachine.os ?? selectedMachine.blueprint ?? "Unknown"
+                  }
                   secondary={selectedMachine.blueprint ?? undefined}
                 />
                 <InfoRow
                   icon={Cpu}
                   label="Hardware"
                   primary={selectedMachine.hardware.cpu ?? "Unknown"}
-                  secondary={[selectedMachine.hardware.memory, selectedMachine.hardware.storage]
-                    .filter(Boolean)
-                    .join(" • ") || undefined}
+                  secondary={
+                    [
+                      selectedMachine.hardware.memory,
+                      selectedMachine.hardware.storage,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ") || undefined
+                  }
                 />
                 <InfoRow
                   icon={HardDrive}
@@ -576,7 +650,11 @@ export function MachinesPage() {
                   icon={CalendarClock}
                   label="Ownership"
                   primary={selectedMachine.owner ?? "Unassigned"}
-                  secondary={selectedMachine.lastCheckIn ? `Updated ${formatAbsolute(selectedMachine.lastCheckIn)}` : undefined}
+                  secondary={
+                    selectedMachine.lastCheckIn
+                      ? `Updated ${formatAbsolute(selectedMachine.lastCheckIn)}`
+                      : undefined
+                  }
                 />
               </div>
 
@@ -591,7 +669,9 @@ export function MachinesPage() {
                       >
                         <div>
                           <p className="font-medium">{net.interface}</p>
-                          <p className="text-xs text-muted-foreground">{net.mac.toUpperCase()}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {net.mac.toUpperCase()}
+                          </p>
                         </div>
                         <div className="text-right text-xs text-muted-foreground">
                           <p>{net.ip ?? "No IP assigned"}</p>
@@ -600,7 +680,9 @@ export function MachinesPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-muted-foreground">No interfaces reported.</p>
+                    <p className="text-xs text-muted-foreground">
+                      No interfaces reported.
+                    </p>
                   )}
                 </div>
               </div>
@@ -610,10 +692,15 @@ export function MachinesPage() {
                 <div className="mt-2 space-y-2 text-sm">
                   {selectedMachine.runs.length > 0 ? (
                     selectedMachine.runs.map((run) => (
-                      <div key={run.id} className="rounded-md border bg-muted/30 p-3">
+                      <div
+                        key={run.id}
+                        className="rounded-md border bg-muted/30 p-3"
+                      >
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="font-medium">{run.blueprint ?? "Unknown blueprint"}</p>
+                            <p className="font-medium">
+                              {run.blueprint ?? "Unknown blueprint"}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               {run.finishedAt
                                 ? `${formatAbsolute(run.startedAt)} → ${formatAbsolute(run.finishedAt)}`
@@ -625,7 +712,9 @@ export function MachinesPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-muted-foreground">No runs recorded yet.</p>
+                    <p className="text-xs text-muted-foreground">
+                      No runs recorded yet.
+                    </p>
                   )}
                 </div>
               </div>
@@ -641,7 +730,9 @@ export function MachinesPage() {
                       >
                         <div>
                           <p className="font-medium">{fact.label}</p>
-                          <p className="text-xs text-muted-foreground">{fact.value}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {fact.value}
+                          </p>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           Updated {formatRelativeTime(fact.updatedAt)}
@@ -649,7 +740,9 @@ export function MachinesPage() {
                       </li>
                     ))
                   ) : (
-                    <li className="text-xs text-muted-foreground">No agent facts reported yet.</li>
+                    <li className="text-xs text-muted-foreground">
+                      No agent facts reported yet.
+                    </li>
                   )}
                 </ul>
               </div>
@@ -657,7 +750,10 @@ export function MachinesPage() {
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
               <ChevronRight className="h-6 w-6" aria-hidden />
-              <p>Select a machine from the inventory table to inspect its details.</p>
+              <p>
+                Select a machine from the inventory table to inspect its
+                details.
+              </p>
             </div>
           )}
         </div>
@@ -705,9 +801,13 @@ function InfoRow({
     <div className="flex items-start gap-3 rounded-md border bg-muted/20 px-3 py-2">
       <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" aria-hidden />
       <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
         <p className="text-sm font-medium">{primary ?? "Unknown"}</p>
-        {secondary && <p className="text-xs text-muted-foreground">{secondary}</p>}
+        {secondary && (
+          <p className="text-xs text-muted-foreground">{secondary}</p>
+        )}
       </div>
     </div>
   );
@@ -791,7 +891,10 @@ function normaliseMachineRecord(item: MachineListItem): MachineRecord {
     stringFrom(metadataAnnotations, ["owner"]),
   );
 
-  const notes = pickFirstString(stringFrom(profile, ["notes"]), stringFrom(profileDetails, ["notes"]));
+  const notes = pickFirstString(
+    stringFrom(profile, ["notes"]),
+    stringFrom(profileDetails, ["notes"]),
+  );
 
   const network =
     asRecord(profile?.network) ??
@@ -820,7 +923,9 @@ function normaliseMachineRecord(item: MachineListItem): MachineRecord {
     stringFrom(hardware, ["disk"]),
   );
 
-  const uptimeHours = numberFrom(item.latest_fact?.snapshot ?? {}, ["uptime_hours"]);
+  const uptimeHours = numberFrom(item.latest_fact?.snapshot ?? {}, [
+    "uptime_hours",
+  ]);
 
   const tags = collectTags(profile, profileDetails, metadataLabels);
 
@@ -857,10 +962,16 @@ function normaliseMachineRecord(item: MachineListItem): MachineRecord {
     lastCheckIn: item.latest_fact?.created_at ?? machine.updated_at,
     uptimeHours,
     hardware: {
-      cpu: pickFirstString(stringFrom(hardware, ["cpu"]), stringFrom(hardware, ["model"])),
+      cpu: pickFirstString(
+        stringFrom(hardware, ["cpu"]),
+        stringFrom(hardware, ["model"]),
+      ),
       memory: memoryValue,
       storage: storageValue,
-      bmc: pickFirstString(stringFrom(hardware, ["bmc"]), stringFrom(hardware, ["ilo"])),
+      bmc: pickFirstString(
+        stringFrom(hardware, ["bmc"]),
+        stringFrom(hardware, ["ilo"]),
+      ),
     },
     networks,
     runs,
@@ -982,7 +1093,8 @@ function extractNetworks(source?: Record<string, unknown>): MachineNetwork[] {
       if (!record) {
         continue;
       }
-      const iface = stringFrom(record, ["name"]) ?? stringFrom(record, ["interface"]);
+      const iface =
+        stringFrom(record, ["name"]) ?? stringFrom(record, ["interface"]);
       const mac = stringFrom(record, ["mac"]);
       if (!iface || !mac) {
         continue;
@@ -1057,7 +1169,10 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
-function valueFromPath(source: Record<string, unknown> | undefined, path: string[]): unknown {
+function valueFromPath(
+  source: Record<string, unknown> | undefined,
+  path: string[],
+): unknown {
   let current: unknown = source;
   for (const segment of path) {
     if (!asRecord(current)) {
@@ -1068,7 +1183,10 @@ function valueFromPath(source: Record<string, unknown> | undefined, path: string
   return current;
 }
 
-function stringFrom(source: Record<string, unknown> | undefined, path: string[]): string | undefined {
+function stringFrom(
+  source: Record<string, unknown> | undefined,
+  path: string[],
+): string | undefined {
   const value = valueFromPath(source, path);
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -1077,7 +1195,10 @@ function stringFrom(source: Record<string, unknown> | undefined, path: string[])
   return undefined;
 }
 
-function numberFrom(source: Record<string, unknown> | undefined, path: string[]): number | undefined {
+function numberFrom(
+  source: Record<string, unknown> | undefined,
+  path: string[],
+): number | undefined {
   const value = valueFromPath(source, path);
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -1091,7 +1212,9 @@ function numberFrom(source: Record<string, unknown> | undefined, path: string[])
   return undefined;
 }
 
-function pickFirstString(...candidates: (string | undefined)[]): string | undefined {
+function pickFirstString(
+  ...candidates: (string | undefined)[]
+): string | undefined {
   for (const candidate of candidates) {
     if (candidate && candidate.trim().length > 0) {
       return candidate.trim();
