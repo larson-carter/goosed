@@ -20,10 +20,7 @@ const API_BASE_URL = (() => {
   if (metaBaseURL) {
     return metaBaseURL;
   }
-  if (import.meta.env.DEV) {
-    return "/api";
-  }
-  return "";
+  return "/api";
 })();
 
 export function apiURL(path: string) {
