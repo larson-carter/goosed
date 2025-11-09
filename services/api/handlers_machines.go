@@ -125,7 +125,7 @@ func (a *API) handleListMachines(w http.ResponseWriter, r *http.Request) {
 	for _, model := range models {
 		machine := model.toAPI()
 
-		fact, _ := latestFacts[machine.ID]
+		fact := latestFacts[machine.ID]
 		runs := recentRuns[machine.ID]
 
 		status := deriveMachineStatus(fact, runs)

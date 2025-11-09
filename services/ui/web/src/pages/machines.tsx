@@ -1,7 +1,6 @@
 import {
   type ComponentType,
   type SVGProps,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -33,7 +32,6 @@ import type {
   MachineListItem,
   MachineNetwork,
   MachineRecord,
-  MachineRun,
   MachineFact,
   MachineFactEntry,
   APIRun,
@@ -194,7 +192,7 @@ export function MachinesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<MachineStatus | "all">("all");
   const [siteFilter, setSiteFilter] = useState<string>("all");
-  const [selectedMachineId, setSelectedMachineId] = useState<string>("");
+  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
 
   const { data, isLoading, isError, error, refetch, isRefetching } =
     useMachinesQuery();
@@ -205,19 +203,6 @@ export function MachinesPage() {
     }
     return data.machines.map(normaliseMachineRecord);
   }, [data]);
-
-  useEffect(() => {
-    if (machines.length === 0) {
-      setSelectedMachineId("");
-      return;
-    }
-    if (!machines.some((item) => item.id === selectedMachineId)) {
-      setSelectedMachineId(machines[0].id);
-    }
-  }, [machines, selectedMachineId]);
-
-  const statusCounts = useMemo(() => computeStatusCounts(machines), [machines]);
-  const sites = useMemo(() => computeSiteOptions(machines), [machines]);
 
   const filteredMachines = useMemo(() => {
     return machines.filter((machine) => {
@@ -251,15 +236,28 @@ export function MachinesPage() {
     });
   }, [machines, searchTerm, siteFilter, statusFilter]);
 
-  useEffect(() => {
-    if (!filteredMachines.some((item) => item.id === selectedMachineId)) {
-      setSelectedMachineId(filteredMachines[0]?.id ?? "");
+  const activeMachineId = useMemo(() => {
+    if (filteredMachines.length > 0) {
+      if (selectedMachineId && filteredMachines.some((item) => item.id === selectedMachineId)) {
+        return selectedMachineId;
+      }
+      return filteredMachines[0].id;
     }
-  }, [filteredMachines, selectedMachineId]);
+    if (selectedMachineId && machines.some((item) => item.id === selectedMachineId)) {
+      return selectedMachineId;
+    }
+    return machines[0]?.id ?? "";
+  }, [filteredMachines, machines, selectedMachineId]);
 
   const selectedMachine = useMemo<MachineRecord | undefined>(() => {
-    return machines.find((item) => item.id === selectedMachineId);
-  }, [machines, selectedMachineId]);
+    if (!activeMachineId) {
+      return undefined;
+    }
+    return machines.find((item) => item.id === activeMachineId);
+  }, [activeMachineId, machines]);
+
+  const statusCounts = useMemo(() => computeStatusCounts(machines), [machines]);
+  const sites = useMemo(() => computeSiteOptions(machines), [machines]);
 
   const filtersActive =
     statusFilter !== "all" || siteFilter !== "all" || searchTerm.trim().length > 0;
@@ -448,7 +446,7 @@ export function MachinesPage() {
                   </tr>
                 )}
                 {filteredMachines.map((machine) => {
-                  const isSelected = selectedMachineId === machine.id;
+                  const isSelected = activeMachineId === machine.id;
                   return (
                     <tr
                       key={machine.id}
@@ -1030,7 +1028,7 @@ function formatFactEntries(fact?: MachineFact | null): MachineFactEntry[] {
 
 function formatFactLabel(value: string) {
   return value
-    .replace(/[_\-]+/g, " ")
+    .replace(/[_-]+/g, " ")
     .split(" ")
     .map((part) => (part ? part[0]?.toUpperCase() + part.slice(1) : ""))
     .join(" ");
@@ -1048,7 +1046,7 @@ function formatFactValue(value: unknown) {
   }
   try {
     return JSON.stringify(value);
-  } catch (error) {
+  } catch {
     return "(complex value)";
   }
 }
