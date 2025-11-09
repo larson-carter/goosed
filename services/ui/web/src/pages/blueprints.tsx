@@ -16,14 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { BlueprintRecord, BlueprintsResponse } from "../types/blueprints";
-
-const API_BASE_URL = (() => {
-  const raw = import.meta.env.VITE_API_BASE_URL;
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return raw.replace(/\/$/, "");
-  }
-  return "/api";
-})();
+import { apiURL } from "../lib/api";
 
 type BlueprintPayload = {
   name: string;
@@ -70,13 +63,13 @@ function useBlueprintsQuery(options?: BlueprintsQueryOptions) {
   return useQuery<BlueprintsResponse, Error>({
     queryKey: ["blueprints"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/v1/blueprints`, {
+      const response = await fetch(apiURL("/v1/blueprints"), {
         credentials: "include",
       });
       if (!response.ok) {
         throw await extractError(response);
       }
-      const payload = (await response.json()) as BlueprintsResponse;
+      const payload = await parseJSONResponse<BlueprintsResponse>(response);
       if (!payload || !Array.isArray(payload.blueprints)) {
         return { blueprints: [] } satisfies BlueprintsResponse;
       }
@@ -90,14 +83,38 @@ function useBlueprintsQuery(options?: BlueprintsQueryOptions) {
 
 async function extractError(response: Response) {
   try {
-    const payload = (await response.json()) as { error?: string };
-    if (payload?.error) {
-      return new Error(payload.error);
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.toLowerCase().includes("application/json")) {
+      const payload = (await response.json()) as { error?: string };
+      if (payload?.error) {
+        return new Error(payload.error);
+      }
+    } else {
+      const text = (await response.text()).trim();
+      if (text) {
+        return new Error(text);
+      }
     }
   } catch (error) {
     console.error("Failed to parse error payload", error);
   }
   return new Error(`Request failed with status ${response.status}`);
+}
+
+async function parseJSONResponse<T>(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    const text = (await response.text()).trim();
+    if (text) {
+      throw new Error(text);
+    }
+    throw new Error(
+      contentType
+        ? `Expected JSON response but received ${contentType}`
+        : "Expected JSON response but received an empty body",
+    );
+  }
+  return (await response.json()) as T;
 }
 
 export function BlueprintsPage() {
@@ -174,7 +191,7 @@ export function BlueprintsPage() {
 
   const createBlueprint = useMutation({
     mutationFn: async (payload: BlueprintPayload) => {
-      const response = await fetch(`${API_BASE_URL}/v1/blueprints`, {
+      const response = await fetch(apiURL("/v1/blueprints"), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -183,7 +200,9 @@ export function BlueprintsPage() {
       if (!response.ok) {
         throw await extractError(response);
       }
-      const body = (await response.json()) as { blueprint: BlueprintRecord };
+      const body = await parseJSONResponse<{ blueprint: BlueprintRecord }>(
+        response,
+      );
       return body.blueprint;
     },
     onSuccess: (blueprint) => {
@@ -201,7 +220,7 @@ export function BlueprintsPage() {
       id: string;
       payload: BlueprintPayload;
     }) => {
-      const response = await fetch(`${API_BASE_URL}/v1/blueprints/${id}`, {
+      const response = await fetch(apiURL(`/v1/blueprints/${id}`), {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +229,9 @@ export function BlueprintsPage() {
       if (!response.ok) {
         throw await extractError(response);
       }
-      const body = (await response.json()) as { blueprint: BlueprintRecord };
+      const body = await parseJSONResponse<{ blueprint: BlueprintRecord }>(
+        response,
+      );
       return body.blueprint;
     },
     onSuccess: (blueprint) => {
@@ -222,7 +243,7 @@ export function BlueprintsPage() {
 
   const deleteBlueprint = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`${API_BASE_URL}/v1/blueprints/${id}`, {
+      const response = await fetch(apiURL(`/v1/blueprints/${id}`), {
         method: "DELETE",
         credentials: "include",
       });
